@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<!-- saved from url=(0094)https://colinoflynn.com/2020/12/experimenting-with-metastability-and-multiple-clocks-on-fpgas/ -->
+<html lang="en-US"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="max-image-preview:large">
+	<style>img:is([sizes="auto" i], [sizes^="auto," i]) { contain-intrinsic-size: 3000px 1500px }</style>
+	<title>Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O'Flynn</title>
+<link rel="alternate" type="application/rss+xml" title="Colin O&#39;Flynn » Feed" href="https://colinoflynn.com/feed/">
+<link rel="alternate" type="application/rss+xml" title="Colin O&#39;Flynn » Comments Feed" href="https://colinoflynn.com/comments/feed/">
+<link rel="alternate" type="application/rss+xml" title="Colin O&#39;Flynn » Experimenting with Metastability and Multiple Clocks on FPGAs Comments Feed" href="https://colinoflynn.com/2020/12/experimenting-with-metastability-and-multiple-clocks-on-fpgas/feed/">
+<link rel="stylesheet" id="papercite_css-css" href="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/papercite.css" media="all">
+<style id="wp-block-site-logo-inline-css">
+.wp-block-site-logo{box-sizing:border-box;line-height:0}.wp-block-site-logo a{display:inline-block;line-height:0}.wp-block-site-logo.is-default-size img{height:auto;width:120px}.wp-block-site-logo img{height:auto;max-width:100%}.wp-block-site-logo a,.wp-block-site-logo img{border-radius:inherit}.wp-block-site-logo.aligncenter{margin-left:auto;margin-right:auto;text-align:center}:root :where(.wp-block-site-logo.is-style-rounded){border-radius:9999px}
+</style>
+<style id="wp-block-site-title-inline-css">
+.wp-block-site-title{box-sizing:border-box}.wp-block-site-title :where(a){color:inherit;font-family:inherit;font-size:inherit;font-style:inherit;font-weight:inherit;letter-spacing:inherit;line-height:inherit;text-decoration:inherit}
+</style>
+<style id="wp-block-group-inline-css">
+.wp-block-group{box-sizing:border-box}:where(.wp-block-group.wp-block-group-is-layout-constrained){position:relative}
+</style>
+<style id="wp-block-page-list-inline-css">
+.wp-block-navigation .wp-block-page-list{align-items:var(--navigation-layout-align,initial);background-color:inherit;display:flex;flex-direction:var(--navigation-layout-direction,initial);flex-wrap:var(--navigation-layout-wrap,wrap);justify-content:var(--navigation-layout-justify,initial)}.wp-block-navigation .wp-block-navigation-item{background-color:inherit}.wp-block-page-list{box-sizing:border-box}
+</style>
+<link rel="stylesheet" id="wp-block-navigation-css" href="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/style.min.css" media="all">
+<style id="wp-block-post-featured-image-inline-css">
+.wp-block-post-featured-image{margin-left:0;margin-right:0}.wp-block-post-featured-image a{display:block;height:100%}.wp-block-post-featured-image :where(img){box-sizing:border-box;height:auto;max-width:100%;vertical-align:bottom;width:100%}.wp-block-post-featured-image.alignfull img,.wp-block-post-featured-image.alignwide img{width:100%}.wp-block-post-featured-image .wp-block-post-featured-image__overlay.has-background-dim{background-color:#000;inset:0;position:absolute}.wp-block-post-featured-image{position:relative}.wp-block-post-featured-image .wp-block-post-featured-image__overlay.has-background-gradient{background-color:initial}.wp-block-post-featured-image .wp-block-post-featured-image__overlay.has-background-dim-0{opacity:0}.wp-block-post-featured-image .wp-block-post-featured-image__overlay.has-background-dim-10{opacity:.1}.wp-block-post-featured-image .wp-block-post-featured-image__overlay.has-background-dim-20{opacity:.2}.wp-block-post-featured-image .wp-block-post-featured-image__overlay.has-background-dim-30{opacity:.3}.wp-block-post-featured-image .wp-block-post-featured-image__overlay.has-background-dim-40{opacity:.4}.wp-block-post-featured-image .wp-block-post-featured-image__overlay.has-background-dim-50{opacity:.5}.wp-block-post-featured-image .wp-block-post-featured-image__overlay.has-background-dim-60{opacity:.6}.wp-block-post-featured-image .wp-block-post-featured-image__overlay.has-background-dim-70{opacity:.7}.wp-block-post-featured-image .wp-block-post-featured-image__overlay.has-background-dim-80{opacity:.8}.wp-block-post-featured-image .wp-block-post-featured-image__overlay.has-background-dim-90{opacity:.9}.wp-block-post-featured-image .wp-block-post-featured-image__overlay.has-background-dim-100{opacity:1}.wp-block-post-featured-image:where(.alignleft,.alignright){width:100%}
+</style>
+<style id="wp-block-post-title-inline-css">
+.wp-block-post-title{box-sizing:border-box;word-break:break-word}.wp-block-post-title :where(a){display:inline-block;font-family:inherit;font-size:inherit;font-style:inherit;font-weight:inherit;letter-spacing:inherit;line-height:inherit;text-decoration:inherit}
+</style>
+<style id="wp-block-post-date-inline-css">
+.wp-block-post-date{box-sizing:border-box}
+</style>
+<style id="wp-block-paragraph-inline-css">
+.is-small-text{font-size:.875em}.is-regular-text{font-size:1em}.is-large-text{font-size:2.25em}.is-larger-text{font-size:3em}.has-drop-cap:not(:focus):first-letter{float:left;font-size:8.4em;font-style:normal;font-weight:100;line-height:.68;margin:.05em .1em 0 0;text-transform:uppercase}body.rtl .has-drop-cap:not(:focus):first-letter{float:none;margin-left:.1em}p.has-drop-cap.has-background{overflow:hidden}:root :where(p.has-background){padding:1.25em 2.375em}:where(p.has-text-color:not(.has-link-color)) a{color:inherit}p.has-text-align-left[style*="writing-mode:vertical-lr"],p.has-text-align-right[style*="writing-mode:vertical-rl"]{rotate:180deg}
+</style>
+<style id="wp-block-post-author-name-inline-css">
+.wp-block-post-author-name{box-sizing:border-box}
+</style>
+<style id="wp-block-post-terms-inline-css">
+.wp-block-post-terms{box-sizing:border-box}.wp-block-post-terms .wp-block-post-terms__separator{white-space:pre-wrap}
+
+				.is-style-pill a,
+				.is-style-pill span:not([class], [data-rich-text-placeholder]) {
+					display: inline-block;
+					background-color: var(--wp--preset--color--base-2);
+					padding: 0.375rem 0.875rem;
+					border-radius: var(--wp--preset--spacing--20);
+				}
+
+				.is-style-pill a:hover {
+					background-color: var(--wp--preset--color--contrast-3);
+				}
+</style>
+<link rel="stylesheet" id="wp-block-image-css" href="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/style(1).min.css" media="all">
+<style id="wp-block-embed-inline-css">
+.wp-block-embed.alignleft,.wp-block-embed.alignright,.wp-block[data-align=left]>[data-type="core/embed"],.wp-block[data-align=right]>[data-type="core/embed"]{max-width:360px;width:100%}.wp-block-embed.alignleft .wp-block-embed__wrapper,.wp-block-embed.alignright .wp-block-embed__wrapper,.wp-block[data-align=left]>[data-type="core/embed"] .wp-block-embed__wrapper,.wp-block[data-align=right]>[data-type="core/embed"] .wp-block-embed__wrapper{min-width:280px}.wp-block-cover .wp-block-embed{min-height:240px;min-width:320px}.wp-block-embed{overflow-wrap:break-word}.wp-block-embed :where(figcaption){margin-bottom:1em;margin-top:.5em}.wp-block-embed iframe{max-width:100%}.wp-block-embed__wrapper{position:relative}.wp-embed-responsive .wp-has-aspect-ratio .wp-block-embed__wrapper:before{content:"";display:block;padding-top:50%}.wp-embed-responsive .wp-has-aspect-ratio iframe{bottom:0;height:100%;left:0;position:absolute;right:0;top:0;width:100%}.wp-embed-responsive .wp-embed-aspect-21-9 .wp-block-embed__wrapper:before{padding-top:42.85%}.wp-embed-responsive .wp-embed-aspect-18-9 .wp-block-embed__wrapper:before{padding-top:50%}.wp-embed-responsive .wp-embed-aspect-16-9 .wp-block-embed__wrapper:before{padding-top:56.25%}.wp-embed-responsive .wp-embed-aspect-4-3 .wp-block-embed__wrapper:before{padding-top:75%}.wp-embed-responsive .wp-embed-aspect-1-1 .wp-block-embed__wrapper:before{padding-top:100%}.wp-embed-responsive .wp-embed-aspect-9-16 .wp-block-embed__wrapper:before{padding-top:177.77%}.wp-embed-responsive .wp-embed-aspect-1-2 .wp-block-embed__wrapper:before{padding-top:200%}
+</style>
+<style id="wp-block-file-inline-css">
+.wp-block-file{box-sizing:border-box}.wp-block-file:not(.wp-element-button){font-size:.8em}.wp-block-file.aligncenter{text-align:center}.wp-block-file.alignright{text-align:right}.wp-block-file *+.wp-block-file__button{margin-left:.75em}:where(.wp-block-file){margin-bottom:1.5em}.wp-block-file__embed{margin-bottom:1em}:where(.wp-block-file__button){border-radius:2em;display:inline-block;padding:.5em 1em}:where(.wp-block-file__button):is(a):active,:where(.wp-block-file__button):is(a):focus,:where(.wp-block-file__button):is(a):hover,:where(.wp-block-file__button):is(a):visited{box-shadow:none;color:#fff;opacity:.85;text-decoration:none}
+</style>
+<style id="wp-block-post-content-inline-css">
+.wp-block-post-content{display:flow-root}
+</style>
+<style id="wp-block-spacer-inline-css">
+.wp-block-spacer{clear:both}
+</style>
+<style id="wp-block-separator-inline-css">
+@charset "UTF-8";.wp-block-separator{border:none;border-top:2px solid}:root :where(.wp-block-separator.is-style-dots){height:auto;line-height:1;text-align:center}:root :where(.wp-block-separator.is-style-dots):before{color:currentColor;content:"···";font-family:serif;font-size:1.5em;letter-spacing:2em;padding-left:2em}.wp-block-separator.is-style-dots{background:none!important;border:none!important}
+</style>
+<style id="wp-block-heading-inline-css">
+h1.has-background,h2.has-background,h3.has-background,h4.has-background,h5.has-background,h6.has-background{padding:1.25em 2.375em}h1.has-text-align-left[style*=writing-mode]:where([style*=vertical-lr]),h1.has-text-align-right[style*=writing-mode]:where([style*=vertical-rl]),h2.has-text-align-left[style*=writing-mode]:where([style*=vertical-lr]),h2.has-text-align-right[style*=writing-mode]:where([style*=vertical-rl]),h3.has-text-align-left[style*=writing-mode]:where([style*=vertical-lr]),h3.has-text-align-right[style*=writing-mode]:where([style*=vertical-rl]),h4.has-text-align-left[style*=writing-mode]:where([style*=vertical-lr]),h4.has-text-align-right[style*=writing-mode]:where([style*=vertical-rl]),h5.has-text-align-left[style*=writing-mode]:where([style*=vertical-lr]),h5.has-text-align-right[style*=writing-mode]:where([style*=vertical-rl]),h6.has-text-align-left[style*=writing-mode]:where([style*=vertical-lr]),h6.has-text-align-right[style*=writing-mode]:where([style*=vertical-rl]){rotate:180deg}
+
+				.is-style-asterisk:before {
+					content: '';
+					width: 1.5rem;
+					height: 3rem;
+					background: var(--wp--preset--color--contrast-2, currentColor);
+					clip-path: path('M11.93.684v8.039l5.633-5.633 1.216 1.23-5.66 5.66h8.04v1.737H13.2l5.701 5.701-1.23 1.23-5.742-5.742V21h-1.737v-8.094l-5.77 5.77-1.23-1.217 5.743-5.742H.842V9.98h8.162l-5.701-5.7 1.23-1.231 5.66 5.66V.684h1.737Z');
+					display: block;
+				}
+
+				/* Hide the asterisk if the heading has no content, to avoid using empty headings to display the asterisk only, which is an A11Y issue */
+				.is-style-asterisk:empty:before {
+					content: none;
+				}
+
+				.is-style-asterisk:-moz-only-whitespace:before {
+					content: none;
+				}
+
+				.is-style-asterisk.has-text-align-center:before {
+					margin: 0 auto;
+				}
+
+				.is-style-asterisk.has-text-align-right:before {
+					margin-left: auto;
+				}
+
+				.rtl .is-style-asterisk.has-text-align-left:before {
+					margin-right: auto;
+				}
+</style>
+<style id="wp-block-comment-template-inline-css">
+.wp-block-comment-template{box-sizing:border-box;list-style:none;margin-bottom:0;max-width:100%;padding:0}.wp-block-comment-template li{clear:both}.wp-block-comment-template ol{list-style:none;margin-bottom:0;max-width:100%;padding-left:2rem}.wp-block-comment-template.alignleft{float:left}.wp-block-comment-template.aligncenter{margin-left:auto;margin-right:auto;width:fit-content}.wp-block-comment-template.alignright{float:right}
+</style>
+<style id="wp-block-comments-pagination-inline-css">
+.wp-block-comments-pagination>.wp-block-comments-pagination-next,.wp-block-comments-pagination>.wp-block-comments-pagination-numbers,.wp-block-comments-pagination>.wp-block-comments-pagination-previous{font-size:inherit;margin-bottom:.5em;margin-right:.5em}.wp-block-comments-pagination>.wp-block-comments-pagination-next:last-child,.wp-block-comments-pagination>.wp-block-comments-pagination-numbers:last-child,.wp-block-comments-pagination>.wp-block-comments-pagination-previous:last-child{margin-right:0}.wp-block-comments-pagination .wp-block-comments-pagination-previous-arrow{display:inline-block;margin-right:1ch}.wp-block-comments-pagination .wp-block-comments-pagination-previous-arrow:not(.is-arrow-chevron){transform:scaleX(1)}.wp-block-comments-pagination .wp-block-comments-pagination-next-arrow{display:inline-block;margin-left:1ch}.wp-block-comments-pagination .wp-block-comments-pagination-next-arrow:not(.is-arrow-chevron){transform:scaleX(1)}.wp-block-comments-pagination.aligncenter{justify-content:center}
+</style>
+<style id="wp-block-post-comments-form-inline-css">
+:where(.wp-block-post-comments-form) input:not([type=submit]),:where(.wp-block-post-comments-form) textarea{border:1px solid #949494;font-family:inherit;font-size:1em}:where(.wp-block-post-comments-form) input:where(:not([type=submit]):not([type=checkbox])),:where(.wp-block-post-comments-form) textarea{padding:calc(.667em + 2px)}.wp-block-post-comments-form{box-sizing:border-box}.wp-block-post-comments-form[style*=font-weight] :where(.comment-reply-title){font-weight:inherit}.wp-block-post-comments-form[style*=font-family] :where(.comment-reply-title){font-family:inherit}.wp-block-post-comments-form[class*=-font-size] :where(.comment-reply-title),.wp-block-post-comments-form[style*=font-size] :where(.comment-reply-title){font-size:inherit}.wp-block-post-comments-form[style*=line-height] :where(.comment-reply-title){line-height:inherit}.wp-block-post-comments-form[style*=font-style] :where(.comment-reply-title){font-style:inherit}.wp-block-post-comments-form[style*=letter-spacing] :where(.comment-reply-title){letter-spacing:inherit}.wp-block-post-comments-form :where(input[type=submit]){box-shadow:none;cursor:pointer;display:inline-block;overflow-wrap:break-word;text-align:center}.wp-block-post-comments-form .comment-form input:not([type=submit]):not([type=checkbox]):not([type=hidden]),.wp-block-post-comments-form .comment-form textarea{box-sizing:border-box;display:block;width:100%}.wp-block-post-comments-form .comment-form-author label,.wp-block-post-comments-form .comment-form-email label,.wp-block-post-comments-form .comment-form-url label{display:block;margin-bottom:.25em}.wp-block-post-comments-form .comment-form-cookies-consent{display:flex;gap:.25em}.wp-block-post-comments-form .comment-form-cookies-consent #wp-comment-cookies-consent{margin-top:.35em}.wp-block-post-comments-form .comment-reply-title{margin-bottom:0}.wp-block-post-comments-form .comment-reply-title :where(small){font-size:var(--wp--preset--font-size--medium,smaller);margin-left:.5em}.wp-block-post-comments-form input[type=submit]{width:auto}
+</style>
+<style id="wp-block-buttons-inline-css">
+.wp-block-buttons{box-sizing:border-box}.wp-block-buttons.is-vertical{flex-direction:column}.wp-block-buttons.is-vertical>.wp-block-button:last-child{margin-bottom:0}.wp-block-buttons>.wp-block-button{display:inline-block;margin:0}.wp-block-buttons.is-content-justification-left{justify-content:flex-start}.wp-block-buttons.is-content-justification-left.is-vertical{align-items:flex-start}.wp-block-buttons.is-content-justification-center{justify-content:center}.wp-block-buttons.is-content-justification-center.is-vertical{align-items:center}.wp-block-buttons.is-content-justification-right{justify-content:flex-end}.wp-block-buttons.is-content-justification-right.is-vertical{align-items:flex-end}.wp-block-buttons.is-content-justification-space-between{justify-content:space-between}.wp-block-buttons.aligncenter{text-align:center}.wp-block-buttons:not(.is-content-justification-space-between,.is-content-justification-right,.is-content-justification-left,.is-content-justification-center) .wp-block-button.aligncenter{margin-left:auto;margin-right:auto;width:100%}.wp-block-buttons[style*=text-decoration] .wp-block-button,.wp-block-buttons[style*=text-decoration] .wp-block-button__link{text-decoration:inherit}.wp-block-buttons.has-custom-font-size .wp-block-button__link{font-size:inherit}.wp-block-button.aligncenter{text-align:center}
+</style>
+<style id="wp-block-button-inline-css">
+.wp-block-button__link{align-content:center;box-sizing:border-box;cursor:pointer;display:inline-block;height:100%;text-align:center;width:100%;word-break:break-word}.wp-block-button__link.aligncenter{text-align:center}.wp-block-button__link.alignright{text-align:right}:where(.wp-block-button__link){border-radius:9999px;box-shadow:none;padding:calc(.667em + 2px) calc(1.333em + 2px);text-decoration:none}.wp-block-button[style*=text-decoration] .wp-block-button__link{text-decoration:inherit}.wp-block-buttons>.wp-block-button.has-custom-width{max-width:none}.wp-block-buttons>.wp-block-button.has-custom-width .wp-block-button__link{width:100%}.wp-block-buttons>.wp-block-button.has-custom-font-size .wp-block-button__link{font-size:inherit}.wp-block-buttons>.wp-block-button.wp-block-button__width-25{width:calc(25% - var(--wp--style--block-gap, .5em)*.75)}.wp-block-buttons>.wp-block-button.wp-block-button__width-50{width:calc(50% - var(--wp--style--block-gap, .5em)*.5)}.wp-block-buttons>.wp-block-button.wp-block-button__width-75{width:calc(75% - var(--wp--style--block-gap, .5em)*.25)}.wp-block-buttons>.wp-block-button.wp-block-button__width-100{flex-basis:100%;width:100%}.wp-block-buttons.is-vertical>.wp-block-button.wp-block-button__width-25{width:25%}.wp-block-buttons.is-vertical>.wp-block-button.wp-block-button__width-50{width:50%}.wp-block-buttons.is-vertical>.wp-block-button.wp-block-button__width-75{width:75%}.wp-block-button.is-style-squared,.wp-block-button__link.wp-block-button.is-style-squared{border-radius:0}.wp-block-button.no-border-radius,.wp-block-button__link.no-border-radius{border-radius:0!important}:root :where(.wp-block-button .wp-block-button__link.is-style-outline),:root :where(.wp-block-button.is-style-outline>.wp-block-button__link){border:2px solid;padding:.667em 1.333em}:root :where(.wp-block-button .wp-block-button__link.is-style-outline:not(.has-text-color)),:root :where(.wp-block-button.is-style-outline>.wp-block-button__link:not(.has-text-color)){color:currentColor}:root :where(.wp-block-button .wp-block-button__link.is-style-outline:not(.has-background)),:root :where(.wp-block-button.is-style-outline>.wp-block-button__link:not(.has-background)){background-color:initial;background-image:none}
+</style>
+<style id="wp-block-comments-inline-css">
+.wp-block-post-comments{box-sizing:border-box}.wp-block-post-comments .alignleft{float:left}.wp-block-post-comments .alignright{float:right}.wp-block-post-comments .navigation:after{clear:both;content:"";display:table}.wp-block-post-comments .commentlist{clear:both;list-style:none;margin:0;padding:0}.wp-block-post-comments .commentlist .comment{min-height:2.25em;padding-left:3.25em}.wp-block-post-comments .commentlist .comment p{font-size:1em;line-height:1.8;margin:1em 0}.wp-block-post-comments .commentlist .children{list-style:none;margin:0;padding:0}.wp-block-post-comments .comment-author{line-height:1.5}.wp-block-post-comments .comment-author .avatar{border-radius:1.5em;display:block;float:left;height:2.5em;margin-right:.75em;margin-top:.5em;width:2.5em}.wp-block-post-comments .comment-author cite{font-style:normal}.wp-block-post-comments .comment-meta{font-size:.875em;line-height:1.5}.wp-block-post-comments .comment-meta b{font-weight:400}.wp-block-post-comments .comment-meta .comment-awaiting-moderation{display:block;margin-bottom:1em;margin-top:1em}.wp-block-post-comments .comment-body .commentmetadata{font-size:.875em}.wp-block-post-comments .comment-form-author label,.wp-block-post-comments .comment-form-comment label,.wp-block-post-comments .comment-form-email label,.wp-block-post-comments .comment-form-url label{display:block;margin-bottom:.25em}.wp-block-post-comments .comment-form input:not([type=submit]):not([type=checkbox]),.wp-block-post-comments .comment-form textarea{box-sizing:border-box;display:block;width:100%}.wp-block-post-comments .comment-form-cookies-consent{display:flex;gap:.25em}.wp-block-post-comments .comment-form-cookies-consent #wp-comment-cookies-consent{margin-top:.35em}.wp-block-post-comments .comment-reply-title{margin-bottom:0}.wp-block-post-comments .comment-reply-title :where(small){font-size:var(--wp--preset--font-size--medium,smaller);margin-left:.5em}.wp-block-post-comments .reply{font-size:.875em;margin-bottom:1.4em}.wp-block-post-comments input:not([type=submit]),.wp-block-post-comments textarea{border:1px solid #949494;font-family:inherit;font-size:1em}.wp-block-post-comments input:not([type=submit]):not([type=checkbox]),.wp-block-post-comments textarea{padding:calc(.667em + 2px)}:where(.wp-block-post-comments input[type=submit]){border:none}.wp-block-comments{box-sizing:border-box}
+</style>
+<style id="wp-block-post-navigation-link-inline-css">
+.wp-block-post-navigation-link .wp-block-post-navigation-link__arrow-previous{display:inline-block;margin-right:1ch}.wp-block-post-navigation-link .wp-block-post-navigation-link__arrow-previous:not(.is-arrow-chevron){transform:scaleX(1)}.wp-block-post-navigation-link .wp-block-post-navigation-link__arrow-next{display:inline-block;margin-left:1ch}.wp-block-post-navigation-link .wp-block-post-navigation-link__arrow-next:not(.is-arrow-chevron){transform:scaleX(1)}.wp-block-post-navigation-link.has-text-align-left[style*="writing-mode: vertical-lr"],.wp-block-post-navigation-link.has-text-align-right[style*="writing-mode: vertical-rl"]{rotate:180deg}
+</style>
+<style id="wp-block-site-tagline-inline-css">
+.wp-block-site-tagline{box-sizing:border-box}
+</style>
+<style id="wp-block-navigation-link-inline-css">
+.wp-block-navigation .wp-block-navigation-item__label{overflow-wrap:break-word}.wp-block-navigation .wp-block-navigation-item__description{display:none}.link-ui-tools{border-top:1px solid #f0f0f0;padding:8px}.link-ui-block-inserter{padding-top:8px}.link-ui-block-inserter__back{margin-left:8px;text-transform:uppercase}
+
+				.is-style-arrow-link .wp-block-navigation-item__label:after {
+					content: "\2197";
+					padding-inline-start: 0.25rem;
+					vertical-align: middle;
+					text-decoration: none;
+					display: inline-block;
+				}
+</style>
+<style id="wp-block-columns-inline-css">
+.wp-block-columns{align-items:normal!important;box-sizing:border-box;display:flex;flex-wrap:wrap!important}@media (min-width:782px){.wp-block-columns{flex-wrap:nowrap!important}}.wp-block-columns.are-vertically-aligned-top{align-items:flex-start}.wp-block-columns.are-vertically-aligned-center{align-items:center}.wp-block-columns.are-vertically-aligned-bottom{align-items:flex-end}@media (max-width:781px){.wp-block-columns:not(.is-not-stacked-on-mobile)>.wp-block-column{flex-basis:100%!important}}@media (min-width:782px){.wp-block-columns:not(.is-not-stacked-on-mobile)>.wp-block-column{flex-basis:0;flex-grow:1}.wp-block-columns:not(.is-not-stacked-on-mobile)>.wp-block-column[style*=flex-basis]{flex-grow:0}}.wp-block-columns.is-not-stacked-on-mobile{flex-wrap:nowrap!important}.wp-block-columns.is-not-stacked-on-mobile>.wp-block-column{flex-basis:0;flex-grow:1}.wp-block-columns.is-not-stacked-on-mobile>.wp-block-column[style*=flex-basis]{flex-grow:0}:where(.wp-block-columns){margin-bottom:1.75em}:where(.wp-block-columns.has-background){padding:1.25em 2.375em}.wp-block-column{flex-grow:1;min-width:0;overflow-wrap:break-word;word-break:break-word}.wp-block-column.is-vertically-aligned-top{align-self:flex-start}.wp-block-column.is-vertically-aligned-center{align-self:center}.wp-block-column.is-vertically-aligned-bottom{align-self:flex-end}.wp-block-column.is-vertically-aligned-stretch{align-self:stretch}.wp-block-column.is-vertically-aligned-bottom,.wp-block-column.is-vertically-aligned-center,.wp-block-column.is-vertically-aligned-top{width:100%}
+</style>
+<style id="wp-emoji-styles-inline-css">
+
+	img.wp-smiley, img.emoji {
+		display: inline !important;
+		border: none !important;
+		box-shadow: none !important;
+		height: 1em !important;
+		width: 1em !important;
+		margin: 0 0.07em !important;
+		vertical-align: -0.1em !important;
+		background: none !important;
+		padding: 0 !important;
+	}
+</style>
+<link rel="stylesheet" id="wp-block-library-css" href="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/common.min.css" media="all">
+<style id="global-styles-inline-css">
+:root{--wp--preset--aspect-ratio--square: 1;--wp--preset--aspect-ratio--4-3: 4/3;--wp--preset--aspect-ratio--3-4: 3/4;--wp--preset--aspect-ratio--3-2: 3/2;--wp--preset--aspect-ratio--2-3: 2/3;--wp--preset--aspect-ratio--16-9: 16/9;--wp--preset--aspect-ratio--9-16: 9/16;--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--color--base: #f9f9f9;--wp--preset--color--base-2: #ffffff;--wp--preset--color--contrast: #111111;--wp--preset--color--contrast-2: #636363;--wp--preset--color--contrast-3: #A4A4A4;--wp--preset--color--accent: #cfcabe;--wp--preset--color--accent-2: #c2a990;--wp--preset--color--accent-3: #d8613c;--wp--preset--color--accent-4: #b1c5a4;--wp--preset--color--accent-5: #b5bdbc;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgba(6,147,227,1) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgba(252,185,0,1) 0%,rgba(255,105,0,1) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgba(255,105,0,1) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--gradient--gradient-1: linear-gradient(to bottom, #cfcabe 0%, #F9F9F9 100%);--wp--preset--gradient--gradient-2: linear-gradient(to bottom, #C2A990 0%, #F9F9F9 100%);--wp--preset--gradient--gradient-3: linear-gradient(to bottom, #D8613C 0%, #F9F9F9 100%);--wp--preset--gradient--gradient-4: linear-gradient(to bottom, #B1C5A4 0%, #F9F9F9 100%);--wp--preset--gradient--gradient-5: linear-gradient(to bottom, #B5BDBC 0%, #F9F9F9 100%);--wp--preset--gradient--gradient-6: linear-gradient(to bottom, #A4A4A4 0%, #F9F9F9 100%);--wp--preset--gradient--gradient-7: linear-gradient(to bottom, #cfcabe 50%, #F9F9F9 50%);--wp--preset--gradient--gradient-8: linear-gradient(to bottom, #C2A990 50%, #F9F9F9 50%);--wp--preset--gradient--gradient-9: linear-gradient(to bottom, #D8613C 50%, #F9F9F9 50%);--wp--preset--gradient--gradient-10: linear-gradient(to bottom, #B1C5A4 50%, #F9F9F9 50%);--wp--preset--gradient--gradient-11: linear-gradient(to bottom, #B5BDBC 50%, #F9F9F9 50%);--wp--preset--gradient--gradient-12: linear-gradient(to bottom, #A4A4A4 50%, #F9F9F9 50%);--wp--preset--font-size--small: 0.9rem;--wp--preset--font-size--medium: 1.05rem;--wp--preset--font-size--large: clamp(1.39rem, 1.39rem + ((1vw - 0.2rem) * 0.767), 1.85rem);--wp--preset--font-size--x-large: clamp(1.85rem, 1.85rem + ((1vw - 0.2rem) * 1.083), 2.5rem);--wp--preset--font-size--xx-large: clamp(2.5rem, 2.5rem + ((1vw - 0.2rem) * 1.283), 3.27rem);--wp--preset--font-family--body: "Inter", sans-serif;--wp--preset--font-family--heading: Cardo;--wp--preset--font-family--system-sans-serif: -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, helvetica, Cantarell, Ubuntu, roboto, noto, arial, sans-serif;--wp--preset--font-family--system-serif: Iowan Old Style, Apple Garamond, Baskerville, Times New Roman, Droid Serif, Times, Source Serif Pro, serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;--wp--preset--spacing--20: min(1.5rem, 2vw);--wp--preset--spacing--30: min(2.5rem, 3vw);--wp--preset--spacing--40: min(4rem, 5vw);--wp--preset--spacing--50: min(6.5rem, 8vw);--wp--preset--spacing--60: min(10.5rem, 13vw);--wp--preset--spacing--70: 3.38rem;--wp--preset--spacing--80: 5.06rem;--wp--preset--spacing--10: 1rem;--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2);--wp--preset--shadow--deep: 12px 12px 50px rgba(0, 0, 0, 0.4);--wp--preset--shadow--sharp: 6px 6px 0px rgba(0, 0, 0, 0.2);--wp--preset--shadow--outlined: 6px 6px 0px -3px rgba(255, 255, 255, 1), 6px 6px rgba(0, 0, 0, 1);--wp--preset--shadow--crisp: 6px 6px 0px rgba(0, 0, 0, 1);}:root { --wp--style--global--content-size: 620px;--wp--style--global--wide-size: 1280px; }:where(body) { margin: 0; }.wp-site-blocks { padding-top: var(--wp--style--root--padding-top); padding-bottom: var(--wp--style--root--padding-bottom); }.has-global-padding { padding-right: var(--wp--style--root--padding-right); padding-left: var(--wp--style--root--padding-left); }.has-global-padding > .alignfull { margin-right: calc(var(--wp--style--root--padding-right) * -1); margin-left: calc(var(--wp--style--root--padding-left) * -1); }.has-global-padding :where(:not(.alignfull.is-layout-flow) > .has-global-padding:not(.wp-block-block, .alignfull)) { padding-right: 0; padding-left: 0; }.has-global-padding :where(:not(.alignfull.is-layout-flow) > .has-global-padding:not(.wp-block-block, .alignfull)) > .alignfull { margin-left: 0; margin-right: 0; }.wp-site-blocks > .alignleft { float: left; margin-right: 2em; }.wp-site-blocks > .alignright { float: right; margin-left: 2em; }.wp-site-blocks > .aligncenter { justify-content: center; margin-left: auto; margin-right: auto; }:where(.wp-site-blocks) > * { margin-block-start: 1.2rem; margin-block-end: 0; }:where(.wp-site-blocks) > :first-child { margin-block-start: 0; }:where(.wp-site-blocks) > :last-child { margin-block-end: 0; }:root { --wp--style--block-gap: 1.2rem; }:root :where(.is-layout-flow) > :first-child{margin-block-start: 0;}:root :where(.is-layout-flow) > :last-child{margin-block-end: 0;}:root :where(.is-layout-flow) > *{margin-block-start: 1.2rem;margin-block-end: 0;}:root :where(.is-layout-constrained) > :first-child{margin-block-start: 0;}:root :where(.is-layout-constrained) > :last-child{margin-block-end: 0;}:root :where(.is-layout-constrained) > *{margin-block-start: 1.2rem;margin-block-end: 0;}:root :where(.is-layout-flex){gap: 1.2rem;}:root :where(.is-layout-grid){gap: 1.2rem;}.is-layout-flow > .alignleft{float: left;margin-inline-start: 0;margin-inline-end: 2em;}.is-layout-flow > .alignright{float: right;margin-inline-start: 2em;margin-inline-end: 0;}.is-layout-flow > .aligncenter{margin-left: auto !important;margin-right: auto !important;}.is-layout-constrained > .alignleft{float: left;margin-inline-start: 0;margin-inline-end: 2em;}.is-layout-constrained > .alignright{float: right;margin-inline-start: 2em;margin-inline-end: 0;}.is-layout-constrained > .aligncenter{margin-left: auto !important;margin-right: auto !important;}.is-layout-constrained > :where(:not(.alignleft):not(.alignright):not(.alignfull)){max-width: var(--wp--style--global--content-size);margin-left: auto !important;margin-right: auto !important;}.is-layout-constrained > .alignwide{max-width: var(--wp--style--global--wide-size);}body .is-layout-flex{display: flex;}.is-layout-flex{flex-wrap: wrap;align-items: center;}.is-layout-flex > :is(*, div){margin: 0;}body .is-layout-grid{display: grid;}.is-layout-grid > :is(*, div){margin: 0;}body{background-color: var(--wp--preset--color--base);color: var(--wp--preset--color--contrast);font-family: var(--wp--preset--font-family--body);font-size: var(--wp--preset--font-size--medium);font-style: normal;font-weight: 400;line-height: 1.55;--wp--style--root--padding-top: 0px;--wp--style--root--padding-right: var(--wp--preset--spacing--50);--wp--style--root--padding-bottom: 0px;--wp--style--root--padding-left: var(--wp--preset--spacing--50);}a:where(:not(.wp-element-button)){color: var(--wp--preset--color--contrast);text-decoration: underline;}:root :where(a:where(:not(.wp-element-button)):hover){text-decoration: none;}h1, h2, h3, h4, h5, h6{color: var(--wp--preset--color--contrast);font-family: var(--wp--preset--font-family--heading);font-weight: 400;line-height: 1.2;}h1{font-size: var(--wp--preset--font-size--xx-large);line-height: 1.15;}h2{font-size: var(--wp--preset--font-size--x-large);}h3{font-size: var(--wp--preset--font-size--large);}h4{font-size: clamp(1.1rem, 1.1rem + ((1vw - 0.2rem) * 0.767), 1.5rem);}h5{font-size: var(--wp--preset--font-size--medium);}h6{font-size: var(--wp--preset--font-size--small);}:root :where(.wp-element-button, .wp-block-button__link){background-color: var(--wp--preset--color--contrast);border-radius: .33rem;border-color: var(--wp--preset--color--contrast);border-width: 0;color: var(--wp--preset--color--base);font-family: inherit;font-size: var(--wp--preset--font-size--small);font-style: normal;font-weight: 500;line-height: inherit;padding-top: 0.6rem;padding-right: 1rem;padding-bottom: 0.6rem;padding-left: 1rem;text-decoration: none;}:root :where(.wp-element-button:hover, .wp-block-button__link:hover){background-color: var(--wp--preset--color--contrast-2);border-color: var(--wp--preset--color--contrast-2);color: var(--wp--preset--color--base);}:root :where(.wp-element-button:focus, .wp-block-button__link:focus){background-color: var(--wp--preset--color--contrast-2);border-color: var(--wp--preset--color--contrast-2);color: var(--wp--preset--color--base);outline-color: var(--wp--preset--color--contrast);outline-offset: 2px;}:root :where(.wp-element-button:active, .wp-block-button__link:active){background-color: var(--wp--preset--color--contrast);color: var(--wp--preset--color--base);}:root :where(.wp-element-caption, .wp-block-audio figcaption, .wp-block-embed figcaption, .wp-block-gallery figcaption, .wp-block-image figcaption, .wp-block-table figcaption, .wp-block-video figcaption){color: var(--wp--preset--color--contrast-2);font-family: var(--wp--preset--font-family--body);font-size: 0.8rem;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-base-color{color: var(--wp--preset--color--base) !important;}.has-base-2-color{color: var(--wp--preset--color--base-2) !important;}.has-contrast-color{color: var(--wp--preset--color--contrast) !important;}.has-contrast-2-color{color: var(--wp--preset--color--contrast-2) !important;}.has-contrast-3-color{color: var(--wp--preset--color--contrast-3) !important;}.has-accent-color{color: var(--wp--preset--color--accent) !important;}.has-accent-2-color{color: var(--wp--preset--color--accent-2) !important;}.has-accent-3-color{color: var(--wp--preset--color--accent-3) !important;}.has-accent-4-color{color: var(--wp--preset--color--accent-4) !important;}.has-accent-5-color{color: var(--wp--preset--color--accent-5) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-base-background-color{background-color: var(--wp--preset--color--base) !important;}.has-base-2-background-color{background-color: var(--wp--preset--color--base-2) !important;}.has-contrast-background-color{background-color: var(--wp--preset--color--contrast) !important;}.has-contrast-2-background-color{background-color: var(--wp--preset--color--contrast-2) !important;}.has-contrast-3-background-color{background-color: var(--wp--preset--color--contrast-3) !important;}.has-accent-background-color{background-color: var(--wp--preset--color--accent) !important;}.has-accent-2-background-color{background-color: var(--wp--preset--color--accent-2) !important;}.has-accent-3-background-color{background-color: var(--wp--preset--color--accent-3) !important;}.has-accent-4-background-color{background-color: var(--wp--preset--color--accent-4) !important;}.has-accent-5-background-color{background-color: var(--wp--preset--color--accent-5) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-base-border-color{border-color: var(--wp--preset--color--base) !important;}.has-base-2-border-color{border-color: var(--wp--preset--color--base-2) !important;}.has-contrast-border-color{border-color: var(--wp--preset--color--contrast) !important;}.has-contrast-2-border-color{border-color: var(--wp--preset--color--contrast-2) !important;}.has-contrast-3-border-color{border-color: var(--wp--preset--color--contrast-3) !important;}.has-accent-border-color{border-color: var(--wp--preset--color--accent) !important;}.has-accent-2-border-color{border-color: var(--wp--preset--color--accent-2) !important;}.has-accent-3-border-color{border-color: var(--wp--preset--color--accent-3) !important;}.has-accent-4-border-color{border-color: var(--wp--preset--color--accent-4) !important;}.has-accent-5-border-color{border-color: var(--wp--preset--color--accent-5) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-gradient-1-gradient-background{background: var(--wp--preset--gradient--gradient-1) !important;}.has-gradient-2-gradient-background{background: var(--wp--preset--gradient--gradient-2) !important;}.has-gradient-3-gradient-background{background: var(--wp--preset--gradient--gradient-3) !important;}.has-gradient-4-gradient-background{background: var(--wp--preset--gradient--gradient-4) !important;}.has-gradient-5-gradient-background{background: var(--wp--preset--gradient--gradient-5) !important;}.has-gradient-6-gradient-background{background: var(--wp--preset--gradient--gradient-6) !important;}.has-gradient-7-gradient-background{background: var(--wp--preset--gradient--gradient-7) !important;}.has-gradient-8-gradient-background{background: var(--wp--preset--gradient--gradient-8) !important;}.has-gradient-9-gradient-background{background: var(--wp--preset--gradient--gradient-9) !important;}.has-gradient-10-gradient-background{background: var(--wp--preset--gradient--gradient-10) !important;}.has-gradient-11-gradient-background{background: var(--wp--preset--gradient--gradient-11) !important;}.has-gradient-12-gradient-background{background: var(--wp--preset--gradient--gradient-12) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}.has-xx-large-font-size{font-size: var(--wp--preset--font-size--xx-large) !important;}.has-body-font-family{font-family: var(--wp--preset--font-family--body) !important;}.has-heading-font-family{font-family: var(--wp--preset--font-family--heading) !important;}.has-system-sans-serif-font-family{font-family: var(--wp--preset--font-family--system-sans-serif) !important;}.has-system-serif-font-family{font-family: var(--wp--preset--font-family--system-serif) !important;}:where(.wp-site-blocks *:focus){outline-width:2px;outline-style:solid}
+:root :where(.wp-block-buttons-is-layout-flow) > :first-child{margin-block-start: 0;}:root :where(.wp-block-buttons-is-layout-flow) > :last-child{margin-block-end: 0;}:root :where(.wp-block-buttons-is-layout-flow) > *{margin-block-start: 0.7rem;margin-block-end: 0;}:root :where(.wp-block-buttons-is-layout-constrained) > :first-child{margin-block-start: 0;}:root :where(.wp-block-buttons-is-layout-constrained) > :last-child{margin-block-end: 0;}:root :where(.wp-block-buttons-is-layout-constrained) > *{margin-block-start: 0.7rem;margin-block-end: 0;}:root :where(.wp-block-buttons-is-layout-flex){gap: 0.7rem;}:root :where(.wp-block-buttons-is-layout-grid){gap: 0.7rem;}
+:root :where(.wp-block-post-comments-form textarea, .wp-block-post-comments-form input){border-radius:.33rem}
+:root :where(.wp-block-comments-pagination){font-size: var(--wp--preset--font-size--small);}
+:root :where(.wp-block-comments-pagination-next){font-size: var(--wp--preset--font-size--small);}
+:root :where(.wp-block-comments-pagination-previous){font-size: var(--wp--preset--font-size--small);}
+:root :where(.wp-block-navigation){font-weight: 500;}
+:root :where(.wp-block-navigation a:where(:not(.wp-element-button))){text-decoration: none;}
+:root :where(.wp-block-navigation a:where(:not(.wp-element-button)):hover){text-decoration: underline;}
+:root :where(.wp-block-post-author-name){font-size: var(--wp--preset--font-size--small);}
+:root :where(.wp-block-post-author-name a:where(:not(.wp-element-button))){text-decoration: none;}
+:root :where(.wp-block-post-author-name a:where(:not(.wp-element-button)):hover){text-decoration: underline;}
+:root :where(.wp-block-post-date){color: var(--wp--preset--color--contrast-2);font-size: var(--wp--preset--font-size--small);}
+:root :where(.wp-block-post-date a:where(:not(.wp-element-button))){color: var(--wp--preset--color--contrast-2);text-decoration: none;}
+:root :where(.wp-block-post-date a:where(:not(.wp-element-button)):hover){text-decoration: underline;}
+:root :where(.wp-block-post-featured-image img, .wp-block-post-featured-image .block-editor-media-placeholder, .wp-block-post-featured-image .wp-block-post-featured-image__overlay){border-radius: var(--wp--preset--spacing--20);}
+:root :where(.wp-block-post-terms){font-size: var(--wp--preset--font-size--small);}:root :where(.wp-block-post-terms .wp-block-post-terms__prefix){color: var(--wp--preset--color--contrast-2);}
+:root :where(.wp-block-post-terms a:where(:not(.wp-element-button))){text-decoration: none;}
+:root :where(.wp-block-post-terms a:where(:not(.wp-element-button)):hover){text-decoration: underline;}
+:root :where(.wp-block-post-title a:where(:not(.wp-element-button))){text-decoration: none;}
+:root :where(.wp-block-post-title a:where(:not(.wp-element-button)):hover){text-decoration: underline;}
+:root :where(.wp-block-separator){border-color: currentColor;border-width: 0 0 1px 0;border-style: solid;color: var(--wp--preset--color--contrast);}:root :where(.wp-block-separator){}:root :where(.wp-block-separator:not(.is-style-wide):not(.is-style-dots):not(.alignwide):not(.alignfull)){width: var(--wp--preset--spacing--60)}
+:root :where(.wp-block-site-tagline){color: var(--wp--preset--color--contrast-2);font-size: var(--wp--preset--font-size--small);}
+:root :where(.wp-block-site-title){font-family: var(--wp--preset--font-family--body);font-size: clamp(0.875rem, 0.875rem + ((1vw - 0.2rem) * 0.542), 1.2rem);font-style: normal;font-weight: 600;}
+:root :where(.wp-block-site-title a:where(:not(.wp-element-button))){text-decoration: none;}
+:root :where(.wp-block-site-title a:where(:not(.wp-element-button)):hover){text-decoration: none;}
+</style>
+<style id="core-block-supports-inline-css">
+.wp-container-core-group-is-layout-47e5a185 > *{margin-block-start:0;margin-block-end:0;}.wp-container-core-group-is-layout-47e5a185 > * + *{margin-block-start:0px;margin-block-end:0;}.wp-container-core-group-is-layout-fbcf6490{gap:var(--wp--preset--spacing--20);}.wp-container-core-navigation-is-layout-cca85a86{gap:var(--wp--preset--spacing--20);justify-content:flex-end;}.wp-container-core-group-is-layout-bc8e6f51{justify-content:flex-start;}.wp-container-core-group-is-layout-b585a4aa{justify-content:space-between;}.wp-container-core-group-is-layout-dfe8e91f{gap:0.3em;justify-content:flex-start;}.wp-container-core-group-is-layout-6215b345{gap:var(--wp--preset--spacing--10);flex-direction:column;align-items:stretch;}.wp-container-core-group-is-layout-c08a3ef2{flex-wrap:nowrap;justify-content:space-between;}.wp-container-core-group-is-layout-fe9cc265{flex-direction:column;align-items:flex-start;}.wp-container-core-navigation-is-layout-ea0cb840{gap:var(--wp--preset--spacing--10);flex-direction:column;align-items:flex-start;}.wp-container-core-group-is-layout-ea0cb840{gap:var(--wp--preset--spacing--10);flex-direction:column;align-items:flex-start;}.wp-container-core-group-is-layout-353c4f5a{flex-direction:column;align-items:stretch;}.wp-container-core-group-is-layout-e5edad21{justify-content:space-between;align-items:flex-start;}.wp-container-core-columns-is-layout-28f84493{flex-wrap:nowrap;}.wp-elements-fb1dc8a358d6c5ee50b4614eb09d35bb a:where(:not(.wp-element-button)){color:var(--wp--preset--color--contrast);}
+</style>
+<style id="wp-block-template-skip-link-inline-css">
+
+		.skip-link.screen-reader-text {
+			border: 0;
+			clip-path: inset(50%);
+			height: 1px;
+			margin: -1px;
+			overflow: hidden;
+			padding: 0;
+			position: absolute !important;
+			width: 1px;
+			word-wrap: normal !important;
+		}
+
+		.skip-link.screen-reader-text:focus {
+			background-color: #eee;
+			clip-path: none;
+			color: #444;
+			display: block;
+			font-size: 1em;
+			height: auto;
+			left: 5px;
+			line-height: normal;
+			padding: 15px 23px 14px;
+			text-decoration: none;
+			top: 5px;
+			width: auto;
+			z-index: 100000;
+		}
+</style>
+<link rel="stylesheet" id="iksm-public-style-css" href="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/public.css" media="all">
+<style id="akismet-widget-style-inline-css">
+
+			.a-stats {
+				--akismet-color-mid-green: #357b49;
+				--akismet-color-white: #fff;
+				--akismet-color-light-grey: #f6f7f7;
+
+				max-width: 350px;
+				width: auto;
+			}
+
+			.a-stats * {
+				all: unset;
+				box-sizing: border-box;
+			}
+
+			.a-stats strong {
+				font-weight: 600;
+			}
+
+			.a-stats a.a-stats__link,
+			.a-stats a.a-stats__link:visited,
+			.a-stats a.a-stats__link:active {
+				background: var(--akismet-color-mid-green);
+				border: none;
+				box-shadow: none;
+				border-radius: 8px;
+				color: var(--akismet-color-white);
+				cursor: pointer;
+				display: block;
+				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen-Sans', 'Ubuntu', 'Cantarell', 'Helvetica Neue', sans-serif;
+				font-weight: 500;
+				padding: 12px;
+				text-align: center;
+				text-decoration: none;
+				transition: all 0.2s ease;
+			}
+
+			/* Extra specificity to deal with TwentyTwentyOne focus style */
+			.widget .a-stats a.a-stats__link:focus {
+				background: var(--akismet-color-mid-green);
+				color: var(--akismet-color-white);
+				text-decoration: none;
+			}
+
+			.a-stats a.a-stats__link:hover {
+				filter: brightness(110%);
+				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 0 2px rgba(0, 0, 0, 0.16);
+			}
+
+			.a-stats .count {
+				color: var(--akismet-color-white);
+				display: block;
+				font-size: 1.5em;
+				line-height: 1.4;
+				padding: 0 13px;
+				white-space: nowrap;
+			}
+		
+</style>
+<script src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/jquery.min.js.下载" id="jquery-core-js"></script>
+<script src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/jquery-migrate.min.js.下载" id="jquery-migrate-js"></script>
+<script src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/papercite.js.下载" id="papercite-js"></script>
+<script id="breeze-prefetch-js-extra">
+var breeze_prefetch = {"local_url":"https:\/\/colinoflynn.com","ignore_remote_prefetch":"1","ignore_list":["wp-admin","wp-login.php"]};
+</script>
+<script src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/breeze-prefetch-links.min.js.下载" id="breeze-prefetch-js"></script>
+<script src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/public.js.下载" id="iksm-public-script-js"></script>
+<script src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/menu.js.下载" id="iksm-menu-script-js"></script>
+<link rel="https://api.w.org/" href="https://colinoflynn.com/wp-json/"><link rel="alternate" title="JSON" type="application/json" href="https://colinoflynn.com/wp-json/wp/v2/posts/937"><link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://colinoflynn.com/xmlrpc.php?rsd">
+<meta name="generator" content="WordPress 6.8.1">
+<link rel="canonical" href="https://colinoflynn.com/2020/12/experimenting-with-metastability-and-multiple-clocks-on-fpgas/">
+<link rel="shortlink" href="https://colinoflynn.com/?p=937">
+<link rel="alternate" title="oEmbed (JSON)" type="application/json+oembed" href="https://colinoflynn.com/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fcolinoflynn.com%2F2020%2F12%2Fexperimenting-with-metastability-and-multiple-clocks-on-fpgas%2F">
+<link rel="alternate" title="oEmbed (XML)" type="text/xml+oembed" href="https://colinoflynn.com/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fcolinoflynn.com%2F2020%2F12%2Fexperimenting-with-metastability-and-multiple-clocks-on-fpgas%2F&amp;format=xml">
+<style type="text/css" id="iksm-dynamic-style">.iksm-1035 .iksm-terms{background-color:rgba(253,252,255,0);transition:all 400ms;animation:iks-fade-in 1000ms;}.iksm-1035 .iksm-terms-tree--level-1 > * > .iksm-term:not(:last-child){margin-bottom:0;}.iksm-1035 .iksm-term__inner{background-color:rgba(255,136,136,0);min-height:44px;transition:all 400ms;}.iksm-1035 .iksm-term__inner:hover{background-color:rgba(236,236,236,1);}.iksm-1035 .iksm-term--current > .iksm-term__inner{background-color:rgba(212,212,212,1);}.iksm-1035 .iksm-term__link{color:rgba(17,17,17,1);font-size:15px;line-height:15px;font-weight:400;text-decoration:none;padding-top:5px;padding-right:15px;padding-bottom:5px;padding-left:15px;transition:all 400ms;}.iksm-1035 .iksm-term__inner:hover .iksm-term__link{color:rgba(50,50,50,1);}.iksm-1035 .iksm-term__toggle__inner{transition:transform 400ms}.iksm-1035 .iksm-term--expanded > .iksm-term__inner > .iksm-term__toggle > .iksm-term__toggle__inner{transform:rotate(180deg);}.iksm-1035 .iksm-term__toggle{color:rgba(181,189,188,1);font-size:22px;align-self:stretch;height:unset;;width:40px;transition:all 400ms;}.iksm-1035 .iksm-term__toggle:hover{color:rgba(0,0,0,1);}.iksm-1035 .iksm-term__image-container{width:30px;min-width:30px;height:30px;min-height:30px;margin-right:15px;transition:all 400ms;}.iksm-1035 .iksm-term__image{background-size:contain;background-position:center;background-repeat:no-repeat;}.iksm-1035 .iksm-term__image-container:hover{background-size:contain;background-position:center;background-repeat:no-repeat;}.iksm-1035 .iksm-term__inner:hover .iksm-term__image-container{background-size:contain;background-position:center;background-repeat:no-repeat;}.iksm-1035 .iksm-term__inner:focus .iksm-term__image-container{background-size:contain;background-position:center;background-repeat:no-repeat;}.iksm-1035 .iksm-term--current > .iksm-term__inner .iksm-term__image-container{background-size:contain;background-position:center;background-repeat:no-repeat;}.iksm-1035 .iksm-term--child .iksm-term__inner .iksm-term__image-container{background-size:contain;background-position:center;background-repeat:no-repeat;}.iksm-1035 .iksm-term--child .iksm-term__inner .iksm-term__image-container:hover{background-size:contain;background-position:center;background-repeat:no-repeat;}.iksm-1035 .iksm-term--child .iksm-term__inner .iksm-term__image-container:focus{background-size:contain;background-position:center;background-repeat:no-repeat;}.iksm-1035 .iksm-term--child.iksm-term--current > .iksm-term__inner .iksm-term__image-container{background-size:contain;background-position:center;background-repeat:no-repeat;}.iksm-1035  .iksm-term__text{flex: unset}.iksm-1035 .iksm-term__posts-count{color:rgba(133,133,133,1);font-size:16px;margin-left:12px;font-weight:400;transition:all 400ms;}</style><script type="importmap" id="wp-importmap">
+{"imports":{"@wordpress\/interactivity":"https:\/\/colinoflynn.com\/wp-includes\/js\/dist\/script-modules\/interactivity\/index.min.js?ver=55aebb6e0a16726baffb"}}
+</script>
+<script type="module" src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/view.min.js.下载" id="@wordpress/block-library/navigation/view-js-module"></script>
+<link rel="modulepreload" href="https://colinoflynn.com/wp-includes/js/dist/script-modules/interactivity/index.min.js?ver=55aebb6e0a16726baffb" id="@wordpress/interactivity-js-modulepreload"><style class="wp-fonts-local">
+@font-face{font-family:Inter;font-style:normal;font-weight:300 900;font-display:fallback;src:url('https://colinoflynn.com/wp-content/themes/twentytwentyfour/assets/fonts/inter/Inter-VariableFont_slnt,wght.woff2') format('woff2');font-stretch:normal;}
+@font-face{font-family:Cardo;font-style:normal;font-weight:400;font-display:fallback;src:url('https://colinoflynn.com/wp-content/themes/twentytwentyfour/assets/fonts/cardo/cardo_normal_400.woff2') format('woff2');}
+@font-face{font-family:Cardo;font-style:italic;font-weight:400;font-display:fallback;src:url('https://colinoflynn.com/wp-content/themes/twentytwentyfour/assets/fonts/cardo/cardo_italic_400.woff2') format('woff2');}
+@font-face{font-family:Cardo;font-style:normal;font-weight:700;font-display:fallback;src:url('https://colinoflynn.com/wp-content/themes/twentytwentyfour/assets/fonts/cardo/cardo_normal_700.woff2') format('woff2');}
+</style>
+</head>
+
+<body class="wp-singular post-template-default single single-post postid-937 single-format-standard wp-embed-responsive wp-theme-twentytwentyfour">
+
+<a class="skip-link screen-reader-text" id="wp-skip-link" href="https://colinoflynn.com/2020/12/experimenting-with-metastability-and-multiple-clocks-on-fpgas/#wp--skip-link--target">Skip to content</a><div class="wp-site-blocks"><header class="wp-block-template-part">
+<div class="wp-block-group alignwide has-base-background-color has-background has-global-padding is-layout-constrained wp-block-group-is-layout-constrained" style="padding-top:20px;padding-bottom:20px">
+	
+	<div class="wp-block-group alignwide is-content-justification-space-between is-layout-flex wp-container-core-group-is-layout-b585a4aa wp-block-group-is-layout-flex">
+		
+		<div class="wp-block-group is-layout-flex wp-container-core-group-is-layout-fbcf6490 wp-block-group-is-layout-flex">
+			
+
+			
+			<div class="wp-block-group is-layout-flow wp-container-core-group-is-layout-47e5a185 wp-block-group-is-layout-flow">
+				<p class="wp-block-site-title"><a href="https://colinoflynn.com/" target="_self" rel="home">Colin O'Flynn</a></p>
+			</div>
+			
+		</div>
+		
+
+		
+		<div class="wp-block-group is-content-justification-left is-layout-flex wp-container-core-group-is-layout-bc8e6f51 wp-block-group-is-layout-flex">
+			<nav class="is-responsive items-justified-right wp-block-navigation is-horizontal is-content-justification-right is-layout-flex wp-container-core-navigation-is-layout-cca85a86 wp-block-navigation-is-layout-flex" data-wp-interactive="core/navigation" data-wp-context="{&quot;overlayOpenedBy&quot;:{&quot;click&quot;:false,&quot;hover&quot;:false,&quot;focus&quot;:false},&quot;type&quot;:&quot;overlay&quot;,&quot;roleAttribute&quot;:&quot;&quot;,&quot;ariaLabel&quot;:&quot;Menu&quot;}"><button aria-haspopup="dialog" aria-label="Open menu" class="wp-block-navigation__responsive-container-open" data-wp-on-async--click="actions.openMenuOnClick" data-wp-on--keydown="actions.handleMenuKeydown"><svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="7.5" width="16" height="1.5"></rect><rect x="4" y="15" width="16" height="1.5"></rect></svg></button>
+				<div class="wp-block-navigation__responsive-container" id="modal-1" data-wp-class--has-modal-open="state.isMenuOpen" data-wp-class--is-menu-open="state.isMenuOpen" data-wp-watch="callbacks.initMenu" data-wp-on--keydown="actions.handleMenuKeydown" data-wp-on-async--focusout="actions.handleMenuFocusout" tabindex="-1">
+					<div class="wp-block-navigation__responsive-close" tabindex="-1">
+						<div class="wp-block-navigation__responsive-dialog" data-wp-bind--aria-modal="state.ariaModal" data-wp-bind--aria-label="state.ariaLabel" data-wp-bind--role="state.roleAttribute">
+							<button aria-label="Close menu" class="wp-block-navigation__responsive-container-close" data-wp-on-async--click="actions.closeMenuOnClick"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="m13.06 12 6.47-6.47-1.06-1.06L12 10.94 5.53 4.47 4.47 5.53 10.94 12l-6.47 6.47 1.06 1.06L12 13.06l6.47 6.47 1.06-1.06L13.06 12Z"></path></svg></button>
+							<div class="wp-block-navigation__responsive-container-content" data-wp-watch="callbacks.focusFirstElement" id="modal-1-content">
+								<ul class="wp-block-navigation__container is-responsive items-justified-right wp-block-navigation"><ul class="wp-block-page-list"><li class="wp-block-pages-list__item wp-block-navigation-item open-on-hover-click"><a class="wp-block-pages-list__item__link wp-block-navigation-item__content" href="https://colinoflynn.com/about-me/">About Me</a></li><li class="wp-block-pages-list__item wp-block-navigation-item open-on-hover-click"><a class="wp-block-pages-list__item__link wp-block-navigation-item__content" href="https://colinoflynn.com/blog-posts/">All Blog Posts</a></li><li class="wp-block-pages-list__item wp-block-navigation-item open-on-hover-click menu-item-home"><a class="wp-block-pages-list__item__link wp-block-navigation-item__content" href="https://colinoflynn.com/">Colin O’Flynn’s Homepage</a></li><li class="wp-block-pages-list__item wp-block-navigation-item open-on-hover-click"><a class="wp-block-pages-list__item__link wp-block-navigation-item__content" href="https://colinoflynn.com/electronics-projects/">Electronics Projects</a></li><li class="wp-block-pages-list__item wp-block-navigation-item open-on-hover-click"><a class="wp-block-pages-list__item__link wp-block-navigation-item__content" href="https://colinoflynn.com/embedded-security/">Embedded Security</a></li><li class="wp-block-pages-list__item wp-block-navigation-item open-on-hover-click"><a class="wp-block-pages-list__item__link wp-block-navigation-item__content" href="https://colinoflynn.com/programmable-logic-in-practice/">Programmable Logic in Practice</a></li><li data-wp-context="{ &quot;submenuOpenedBy&quot;: { &quot;click&quot;: false, &quot;hover&quot;: false, &quot;focus&quot;: false }, &quot;type&quot;: &quot;submenu&quot;, &quot;modal&quot;: null }" data-wp-interactive="core/navigation" data-wp-on--focusout="actions.handleMenuFocusout" data-wp-on--keydown="actions.handleMenuKeydown" data-wp-on-async--mouseenter="actions.openMenuOnHover" data-wp-on-async--mouseleave="actions.closeMenuOnHover" data-wp-watch="callbacks.initMenu" tabindex="-1" class="wp-block-pages-list__item has-child wp-block-navigation-item open-on-hover-click"><a class="wp-block-pages-list__item__link wp-block-navigation-item__content" href="https://colinoflynn.com/research/">Research</a><button data-wp-bind--aria-expanded="state.isMenuOpen" data-wp-on-async--click="actions.toggleMenuOnClick" aria-label="Research submenu" class="wp-block-navigation__submenu-icon wp-block-navigation-submenu__toggle" aria-expanded="false"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" focusable="false"><path d="M1.50002 4L6.00002 8L10.5 4" stroke-width="1.5"></path></svg></button><ul data-wp-on-async--focus="actions.openMenuOnFocus" class="wp-block-navigation__submenu-container"><li class="wp-block-pages-list__item wp-block-navigation-item open-on-hover-click "><a class="wp-block-pages-list__item__link wp-block-navigation-item__content" href="https://colinoflynn.com/research/embedded-security/">Embedded Security</a></li><li class="wp-block-pages-list__item wp-block-navigation-item open-on-hover-click "><a class="wp-block-pages-list__item__link wp-block-navigation-item__content" href="https://colinoflynn.com/research/publications/">Publications</a></li></ul></li><li class="wp-block-pages-list__item wp-block-navigation-item open-on-hover-click"><a class="wp-block-pages-list__item__link wp-block-navigation-item__content" href="https://colinoflynn.com/making-it-small/">Small Scale Electronics: Making it Small (The Book!)</a></li><li data-wp-context="{ &quot;submenuOpenedBy&quot;: { &quot;click&quot;: false, &quot;hover&quot;: false, &quot;focus&quot;: false }, &quot;type&quot;: &quot;submenu&quot;, &quot;modal&quot;: null }" data-wp-interactive="core/navigation" data-wp-on--focusout="actions.handleMenuFocusout" data-wp-on--keydown="actions.handleMenuKeydown" data-wp-on-async--mouseenter="actions.openMenuOnHover" data-wp-on-async--mouseleave="actions.closeMenuOnHover" data-wp-watch="callbacks.initMenu" tabindex="-1" class="wp-block-pages-list__item has-child wp-block-navigation-item open-on-hover-click"><a class="wp-block-pages-list__item__link wp-block-navigation-item__content" href="https://colinoflynn.com/teaching/">Teaching</a><button data-wp-bind--aria-expanded="state.isMenuOpen" data-wp-on-async--click="actions.toggleMenuOnClick" aria-label="Teaching submenu" class="wp-block-navigation__submenu-icon wp-block-navigation-submenu__toggle" aria-expanded="false"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" focusable="false"><path d="M1.50002 4L6.00002 8L10.5 4" stroke-width="1.5"></path></svg></button><ul data-wp-on-async--focus="actions.openMenuOnFocus" class="wp-block-navigation__submenu-container"><li class="wp-block-pages-list__item wp-block-navigation-item open-on-hover-click "><a class="wp-block-pages-list__item__link wp-block-navigation-item__content" href="https://colinoflynn.com/teaching/eced2200-intro-to-digital-circuits/">ECED2200 – Intro to Digital Circuits</a></li><li class="wp-block-pages-list__item wp-block-navigation-item open-on-hover-click "><a class="wp-block-pages-list__item__link wp-block-navigation-item__content" href="https://colinoflynn.com/teaching/eced3901-design-methods-ii/">ECED3901 – Design Methods II</a></li><li class="wp-block-pages-list__item wp-block-navigation-item open-on-hover-click "><a class="wp-block-pages-list__item__link wp-block-navigation-item__content" href="https://colinoflynn.com/teaching/eced4406/">ECED4406 – Computer Security</a></li></ul></li><li class="wp-block-pages-list__item wp-block-navigation-item open-on-hover-click"><a class="wp-block-pages-list__item__link wp-block-navigation-item__content" href="https://colinoflynn.com/wireless-networking/">Wireless Networking</a></li></ul></ul>
+							</div>
+						</div>
+					</div>
+				</div></nav>
+		</div>
+		
+	</div>
+	
+</div>
+</header>
+
+
+<main class="wp-block-group alignfull is-layout-flow wp-block-group-is-layout-flow" id="wp--skip-link--target">
+	
+	<div class="wp-block-group has-global-padding is-layout-constrained wp-block-group-is-layout-constrained" style="margin-bottom:var(--wp--preset--spacing--40);padding-top:var(--wp--preset--spacing--50)">
+		
+
+		
+		<div class="wp-block-group is-vertical is-content-justification-stretch is-layout-flex wp-container-core-group-is-layout-6215b345 wp-block-group-is-layout-flex" style="padding-top:0;padding-bottom:0">
+			<h1 class="wp-block-post-title has-x-large-font-size">Experimenting with Metastability and Multiple Clocks on FPGAs</h1>
+
+			<div class="wp-block-template-part">
+
+<div class="wp-block-group has-global-padding is-layout-constrained wp-block-group-is-layout-constrained">
+	
+	<div class="wp-block-group is-content-justification-left is-layout-flex wp-container-core-group-is-layout-dfe8e91f wp-block-group-is-layout-flex">
+		<div class="wp-block-post-date"><time datetime="2020-12-26T22:58:43+00:00"><a href="https://colinoflynn.com/2020/12/experimenting-with-metastability-and-multiple-clocks-on-fpgas/">Dec 26, 2020</a></time></div>
+
+		
+		<p class="has-contrast-2-color has-text-color">—</p>
+		
+
+		
+		<p class="has-small-font-size has-contrast-2-color has-text-color">by</p>
+		
+
+		<div class="wp-block-post-author-name"><a href="https://colinoflynn.com/author/coflynn/" target="_self" class="wp-block-post-author-name__link">Colin O’Flynn</a></div>
+
+		<div class="taxonomy-category wp-block-post-terms"><span class="wp-block-post-terms__prefix">in </span><a href="https://colinoflynn.com/category/circuit-cellar/" rel="tag">Circuit Cellar Articles</a></div>
+
+	</div>
+	
+</div>
+
+
+</div>
+		</div>
+		
+	</div>
+	
+
+	<div class="entry-content alignfull wp-block-post-content has-global-padding is-layout-constrained wp-block-post-content-is-layout-constrained">
+<p><strong><em>NOTE: This article appeared in Issue 293 of Circuit Cellar, back in December 2014. I’ve posted it here for your reading pleasure as well. References to previous articles are for Circuit Cellar Issues, as this was originally written for the print publication. This version differs slightly from the print version – this is my own ‘author copy’ version before the Circuit Cellar editing</em></strong>.<strong> References to “ProgrammableLogicInPractice.com” are broken for now, but material has been mirrored to the bottom of this page.</strong></p>
+
+
+
+<p>One of the most critical aspects of any FPGA design is where two clock domains meet. The general rule is to avoid this at all costs, but there are situations where it’s unavoidable. A simple situation is shown in Fig. 1, where our system is receiving data from an ADC, but speaking on a common bus. The ADC sample rate is generated from an external source, and might change for specific applications.</p>
+
+
+
+<figure class="wp-block-image size-large"><img fetchpriority="high" decoding="async" width="1024" height="246" src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/Fig1-1024x246.png" alt="" class="wp-image-938" srcset="https://colinoflynn.com/wp-content/uploads/2020/12/Fig1-1024x246.png 1024w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig1-300x72.png 300w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig1-768x184.png 768w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig1-1536x368.png 1536w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig1-2048x491.png 2048w" sizes="(max-width: 1024px) 100vw, 1024px"><figcaption>Figure 1: Systems such as this make it impossible to avoid multiple clock domains: the output of the ADC will be based on some external clock, and we also have some bus interface with a completely different clock. At some point data from the ADC clock domain must pass into the bus clock domain.</figcaption></figure>
+
+
+
+<span id="more-937"></span>
+
+
+
+<p>A naïve implementation is shown in Fig. 2, where we pay no attention to the two clock domains. By chance it’s very likely that we’re going to attempt to read from the ADC while the data is changing. There are actually two separate issues that pop up here, and I want to give you a more intuitive feeling for both of them.</p>
+
+
+
+<figure class="wp-block-image size-large"><img decoding="async" width="1024" height="616" src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/Fig2-1024x616.png" alt="" class="wp-image-939" srcset="https://colinoflynn.com/wp-content/uploads/2020/12/Fig2-1024x616.png 1024w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig2-300x181.png 300w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig2-768x462.png 768w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig2-1536x925.png 1536w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig2-2048x1233.png 2048w" sizes="(max-width: 1024px) 100vw, 1024px"><figcaption>Figure 2: Here is something destined to quickly fail: we sample the output of the ADC (after registering it inside the FPGA with a D type Flip-Flop) using the new clock domain directly.</figcaption></figure>
+
+
+
+<p>The first is that we might attempt to sample the data in the ‘bus’ clock domain right when the data from the ‘ADC’ clock domain is changing, and we read some incorrect intermediate value. The second is that we might violate setup and hold times of the flip-flops inside our FPGA.</p>
+
+
+
+<p>Because this subject is so important, there have been lots written on it. There is a number of online resources, or if you prefer something printed I recommend Chapter 6 of the book <em>Advanced FPGA Design</em> by Steve Kilts. But rather than just rehash this material, I wanted to present to you some real experimental results about failures. Doing this means I’m going to implement a number of designs wrong, and you can see <em>how</em> they fail.</p>
+
+
+
+<p><strong>Bus Crossing Experiments</strong></p>
+
+
+
+<p>To determine the failure rate of a simple design, I’ve implemented the system shown in Fig. 3. An external clock is used to increment a counter, the value of that counter being read by a system operating from a different clock domain. The previous value of the counter is also kept in another register.</p>
+
+
+
+<figure class="wp-block-image size-large"><img decoding="async" width="1024" height="234" src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/Fig3-1024x234.png" alt="" class="wp-image-940" srcset="https://colinoflynn.com/wp-content/uploads/2020/12/Fig3-1024x234.png 1024w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig3-300x68.png 300w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig3-768x175.png 768w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig3-1536x350.png 1536w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig3-2048x467.png 2048w" sizes="(max-width: 1024px) 100vw, 1024px"><figcaption>Figure 3: Here we implement the same type of system as in Fig 2, but the data source is a binary counter. This makes it easy to determine when invalid data has been loaded, since we know the old and new value should be either the same as previous, or incremented by one. The number of failures and successes is reported back using ChipScope (not shown in figure). The D-FF is a number of D-type Flip-Flops.</figcaption></figure>
+
+
+
+<p>If the system was operating correctly, one would expect that the new value of the counter is the same as the previous value (no count occurred yet), or the previous value plus one (a count occurred). Anything else is flagged as an error, and then the total number of errors is counted, along with total comparisons. From this we can calculate what percentage of reads occurred when invalid data was present. The counters are all large enough that they won’t overflow during the experiment, which would also be flagged as an error.</p>
+
+
+
+<p>The internal system clock is operating at 40MHz, and the results are calculated for various external frequencies of 100kHz, 1MHz, and 10MHz. These results are shown in Table 1. Note that exactly as expected the number of failures scales with external frequency, as a faster external frequency simply means more data changes (clock edges), and thus more chances for data to be read at the wrong time.</p>
+
+
+
+<figure class="wp-block-image size-large"><img loading="lazy" decoding="async" width="716" height="96" src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/image.png" alt="" class="wp-image-941" srcset="https://colinoflynn.com/wp-content/uploads/2020/12/image.png 716w, https://colinoflynn.com/wp-content/uploads/2020/12/image-300x40.png 300w" sizes="auto, (max-width: 716px) 100vw, 716px"><figcaption>Table 1: Without properly synchronization between clock domains, it’s impossible to guarantee the output of the counter is sampled when all data lines are valid. The external clock is the frequency the counter is running at, and the output of the counter is always sampled at 40 MHz. Failures are number of times an invalid piece of data was read from the counter.</figcaption></figure>
+
+
+
+<p>Of special importance you might notice that a substantial number of failures occur even with <em>slow</em> external clocks. When the external clock is 100 kHz we still see a number of failures, even though our system clock is 40 MHz. Thus crossing clock domains is <em>not</em> just something to consider with high-speed designs, but <em>every</em> time you cross clock domains.</p>
+
+
+
+<p><strong>Crossing The Smart Way</strong></p>
+
+
+
+<p>The key to solving this problem is to avoid crossing a number of data lines such as the complete bus, but just to cross a single flag. A better version of this now looks as in Fig. 4, where we also have a ‘Data Ready’ and ‘Acknowledge’ flag. The counter block places new data onto the bus, and keeps that data constant until it has been acknowledged by the other side. Unfortunately even crossing a single line can have trouble as will be explored when we discuss metastability, so we aren’t quite out of the woods yet.</p>
+
+
+
+<figure class="wp-block-image size-large"><img loading="lazy" decoding="async" width="1024" height="282" src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/Fig4-1024x282.png" alt="" class="wp-image-942" srcset="https://colinoflynn.com/wp-content/uploads/2020/12/Fig4-1024x282.png 1024w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig4-300x83.png 300w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig4-768x211.png 768w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig4-1536x423.png 1536w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig4-2048x564.png 2048w" sizes="auto, (max-width: 1024px) 100vw, 1024px"><figcaption>Figure 4: A better system design could use ReaDY and ACKnowledge flags to indicate when data is to be transferred. The output of the counter is only updated once the system acknowledges having received the previous value.</figcaption></figure>
+
+
+
+<p>We can avoid the requirement of designing this clock crossing logic by using blocks from our FPGA vendor instead. FPGA vendors provide First In First Out (FIFO) blocks which have different clocks on the read and write ports. The flags are then relative to the proper clock input, i.e. the ‘full’ flag is valid relative to the ‘write’ side.</p>
+
+
+
+<p>If we wanted to modify our design to simply insert a FIFO with separate clocks, it would now look as in Fig. 5. This ‘bare minimum’ design uses a FIFO provided by the Xilinx CoreGen tools which has separate clock inputs. The FIFO is setup to write data whenever there is space, and read data whenever it is present. As expected, this change results in <em>no</em> errors using the same test as before.</p>
+
+
+
+<figure class="wp-block-image size-large"><img loading="lazy" decoding="async" width="1024" height="273" src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/Fig5-1024x273.png" alt="" class="wp-image-943" srcset="https://colinoflynn.com/wp-content/uploads/2020/12/Fig5-1024x273.png 1024w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig5-300x80.png 300w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig5-768x205.png 768w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig5-1536x410.png 1536w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig5-2048x547.png 2048w" sizes="auto, (max-width: 1024px) 100vw, 1024px"><figcaption>Figure 5: Using built-in blocks such as the dual-clock FIFO elements reduces our chance of doing something wrong. This block takes care of problems dealing with clock crossing, we just need to ensure we respect the specifications of the block.</figcaption></figure>
+
+
+
+<p>A better design can be had by using the flags properly, such as using the <em>empty</em> flag to determine when new data is present from the counter. You can download these simple files from ProgrammableLogicInPractice.com and experiment yourself on different methods of performing the synchronization.</p>
+
+
+
+<p><strong>Metastability Problems</strong></p>
+
+
+
+<p>The ‘bus’ problem just mentioned is the most important, since it means when we attempt to read a value from one clock domain we may get completely invalid data. This occurs even for very slow clocks.</p>
+
+
+
+<p>There is however another issue that is less obvious, but can have serious ramifications. These are when we violate either the <em>setup</em> or <em>hold</em> time of a flip-flop. The <em>setup</em> time means that the input data to the flip-flip must be stable for some amount of time before the clock edge, and the <em>hold</em> time means the data must remain valid for some amount of time after the clock edge.</p>
+
+
+
+<p>In modern FPGAs (such as the Xilinx Spartan 6 I’m using here) these times are very short, being on the order of 0.5 nS. If they are violated the flip-flop may enter a <em>metastable</em> state, which means the output is at an invalid level, and will eventually resolve to either 0 or 1. &nbsp;This is shown in Fig. 6 – note the metastable state isn’t even a valid logic level. The time it takes for the flip-flop to reach its final state may vary slightly, and is given by a probabilistic measure. Thus if you enter the metastable state it will <em>most likely</em> be resolved in some short period of say 1 nS, but it’s <em>possible</em> (although unlikely) to take say 5 nS. For any design you can thus calculate the <em>Mean Time Between Failure</em> (MTBF) indicating how frequently a metastable state would resulting in a settling time longer than some requirement. Some details are published in appnotes by Xilinx and Altera, although data for more recent families requires contact with a Field Application Engineer (FAE).</p>
+
+
+
+<figure class="wp-block-image size-large"><img loading="lazy" decoding="async" width="1024" height="561" src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/Fig6-1024x561.png" alt="" class="wp-image-944" srcset="https://colinoflynn.com/wp-content/uploads/2020/12/Fig6-1024x561.png 1024w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig6-300x164.png 300w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig6-768x421.png 768w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig6-1536x841.png 1536w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig6-2048x1121.png 2048w" sizes="auto, (max-width: 1024px) 100vw, 1024px"><figcaption>Figure 6: If we violate the setup or hold time of a Flip-Flop, the output may enter a metastable state. In this state it is neither 1 nor 0, although any digital logic sampling the output will read it as either a 1 or 0. It will eventually ‘resolve’ to a proper 1 or 0 state, but this took additional time compared to a properly operating flip-flop. In this example the data changed too close to the rising clock edge, resulting in a metastable state that eventually resolves to 1.</figcaption></figure>
+
+
+
+<p>If our data is coming from one clock domain, and the internal clock from another, it’s likely we will eventually violate the setup or hold times, and enter this state. The first thing to realize is that there is no incorrect data output occurring – we can’t say the failure is that it should have resolved to ‘0’ but actually resolved to ‘1’. &nbsp;We attempted to sample the data when it was changing, thus it’s not clear what the correct value should have been in this case.</p>
+
+
+
+<p>There are two main issues with letting the metastable output be used by the rest of the circuit. The first is that the output of the metastable flip-flop will take longer to propagate than expected, since there is some delay while the output is resolving. This might cause a cascade of failures, since this output can cause other flip-flops to enter a metastable state.</p>
+
+
+
+<p>The second is that the invalid logic level representing the metastable state might be read by a ‘1’ in some portions of the circuit and a ‘0’ in other portions, due to small process variations. Thus if the signal is sampled by multiple other entities, completely invalid states could be entered.</p>
+
+
+
+<p><strong>Experimenting with Metastability</strong></p>
+
+
+
+<p>In order to give you a feel for a metastable circuit, I’ve implemented the block diagram from Fig. 7. The clock can be carefully shifted using a Digital Clock Module (DCM) block in the FPGA, giving me on the order of 100 pS resolution. This is enough to cause the setup time to be violated, and hopefully enter a metastable state.</p>
+
+
+
+<figure class="wp-block-image size-large"><img loading="lazy" decoding="async" width="1024" height="241" src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/Fig7-1024x241.png" alt="" class="wp-image-945" srcset="https://colinoflynn.com/wp-content/uploads/2020/12/Fig7-1024x241.png 1024w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig7-300x71.png 300w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig7-768x181.png 768w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig7-1536x361.png 1536w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig7-2048x482.png 2048w" sizes="auto, (max-width: 1024px) 100vw, 1024px"><figcaption>Figure 7: For experimenting with metastability, a Flip-Flop is clocked at 48 MHz. The data input is a 24 MHz clock derived from the 48 MHz clock, and an adjustable delay is present on the clock line. This allows you to repeatedly violate the setup and hold time of the Flip-Flop and observe the output.</figcaption></figure>
+
+
+
+<p>Note we won’t be able to physically see the invalid logic level – I am using an internal flip-flop which is then buffered by the output buffers, thus the output buffer itself will output only a ‘0’ or a ‘1’. We will however be able to see the longer time it takes to resolve a metastable state.</p>
+
+
+
+<p>Operating correctly, the output of the flip-flop would be a change on every rising edge of the 48 MHz clock. Once we start violating the setup time this won’t happen – sometimes the flip-flop will latch the new value (i.e. changing the output), sometimes the flip-flop will latch the old value (i.e. not changing the output).</p>
+
+
+
+<p>Initially the system is operating correctly, as in the diagram from Fig. 8A, which uses a persistence vision mode in the oscilloscope to plot hundreds of traces on-top of each other. The most common path taken is shown in red, and as expected the output of the flip-flop is always changing on the rising edge of the clock. This figure is taken for a Spartan 6 LX75 device with the clock running at 48 MHz. The core voltage (VCC<sub>INT</sub>) is 1.2V, although this figure looks almost identical even if I drop the core voltage to 0.7V (well below the allowed range from the datasheet). I’ll be using this lower core voltage to exaggerate the metastable effect.</p>
+
+
+
+<figure class="wp-block-image size-large"><img loading="lazy" decoding="async" width="636" height="1024" src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/Fig8-636x1024.png" alt="" class="wp-image-946" srcset="https://colinoflynn.com/wp-content/uploads/2020/12/Fig8-636x1024.png 636w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig8-186x300.png 186w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig8-768x1236.png 768w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig8-955x1536.png 955w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig8-1273x2048.png 1273w" sizes="auto, (max-width: 636px) 100vw, 636px"><figcaption>Figure 8: In (A) the input data and clock of Fig. 7 are meeting the setup and hold time specifications of the Flip-Flop (FF), so the output of the FF is operating normally. In (B) the setup time is being violated, and metastable states are resulting at the output which takes additional time to resolve – note for (B) the core voltage of the FPGA is set to 0.7V to exaggerate the metastable effect. Operating the FPGA at 1.2V (normal core voltage) in (C) still shows the metastable state taking longer to resolve to a final value.</figcaption></figure>
+
+
+
+<p>Next, I’ll force the flip-flop to enter metastability. To give you a more obvious figure I’ve dropped the core voltage of the FPGA to 0.7V (again this is BELOW the normal minimum voltage of 1.14V for VCC<sub>INT</sub>). In Fig. 8B you can see it was taking almost 5nS for the output to resolve in some cases, although as you can see it was more common for a quicker resolution. But going back to a real-life case let’s look at when the core voltage is set to 1.2V. The results in Fig. 8C aren’t so dramatic looking, but you can see the additional time required for the metastable state to resolve.</p>
+
+
+
+<p>You can observe some of this in the following video:</p>
+
+
+
+<figure class="wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube wp-embed-aspect-16-9 wp-has-aspect-ratio"><div class="wp-block-embed__wrapper">
+<iframe loading="lazy" title="PLIP Dec 2014: Metastability Experiments with Spartan 6 FPGA" width="500" height="281" src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/alRaqQzTPds.html" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen=""></iframe>
+</div></figure>
+
+
+
+<p><strong>Solving Metastability</strong></p>
+
+
+
+<p>The most classic solution to this problem in shown in Fig. 9, which uses two D flip-flops in a row. If the first flip-flop enters a metastable state, it <em>should</em> be resolved before the second flip-flop samples the output. For most reasonable clock speeds and recent devices this will be true, although there is always still a possibility of the second flip-flop entering a metastable state. The complete system is still characterized by the MTBF, and in some applications three or more flip-flops might be chained to increase the MTBF.</p>
+
+
+
+<figure class="wp-block-image size-large"><img loading="lazy" decoding="async" width="1024" height="357" src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/Fig9-1024x357.png" alt="" class="wp-image-947" srcset="https://colinoflynn.com/wp-content/uploads/2020/12/Fig9-1024x357.png 1024w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig9-300x105.png 300w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig9-768x268.png 768w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig9-1536x535.png 1536w, https://colinoflynn.com/wp-content/uploads/2020/12/Fig9-2048x714.png 2048w" sizes="auto, (max-width: 1024px) 100vw, 1024px"><figcaption>Figure 9: Using two or more flip-flops is the classic synchronizer element. This isn’t a silver bullet however – depending on your requirements you might need more flip-flops, and it’s critical to ensure the synthesis tools are implementing a synchronizer element and not something else which looks identical (such as a shift register).</figcaption></figure>
+
+
+
+<p>Just adding two flip-flops as in Fig. 9 isn’t enough – you must ensure you are implementing the circuit you intend, <em>not</em> what the synthesis tools guess you are doing. In particular this circuit looks like a shift register, thus it may insert a shift-register primitive which <em>doesn’t</em> have the desired metastability characteristics. In addition you may need to constrain the path between the flip-flops, since the tools don’t know that you actually want the shortest possible path between those flip-flops. The tools may assume you are only constrained by the clock period, but in reality you want an even faster route, since the objective is to provide enough ‘slack time’ for the metastable output to resolve to a final value.</p>
+
+
+
+<p>The circuit which safely crosses clock domains is called a <em>synchronizer. </em>Different FPGA vendors and families have different best practices about how to implement this.</p>
+
+
+
+<p>Your best resource is to check for app-notes specific to your FPGA family, and then branch out into general best practices for your vendor (lacking family-specific information). I’ll post some links on ProgrammableLogicInPractice.com for such information on Xilinx Spartan 6 devices, although as mentioned the book <em>Advanced FPGA Design </em>is a good starting point. Xilinx has an older app-note, XAPP094 which provide some detail, with measurements for more recent devices available only on request from the FAE. &nbsp;Altera provides app-note 42 for some basic details, which also links to specifics of implementing synchronizers using the Quartus-II software.</p>
+
+
+
+<p><strong>Staying Stable</strong></p>
+
+
+
+<p>Hopefully you found some real-world examples of what synchronization failures and metastability looks like useful. Whilst lots has been written on the issue, I’m hoping the practical results from this article shows you the problem clearly, and how you can experiment yourself with solutions. Understanding the real problem will help you make better design decisions – there’s no silver bullet for every situation, and by keeping some of these experiments in mind you might find it easier to base your design on solving real problems, not textbook suggestions.</p>
+
+
+
+<p>See below for the FPGA project files.</p>
+
+
+
+<p><strong><u>REFERENCES / MORE INFORMATION</u></strong></p>
+
+
+
+<p>Altera, App-Note 42: <a href="ftp://ftp.altera.com/pub/lit_req/document/an/an042.pdf">ftp://ftp.altera.com/pub/lit_req/document/an/an042.pdf</a></p>
+
+
+
+<p>Xilinx, App-Note 94: <a href="http://www.xilinx.com/support/documentation/application_notes/xapp094.pdf">http://www.xilinx.com/support/documentation/application_notes/xapp094.pdf</a></p>
+
+
+
+<p>Steve Kilts,Advanced FPGA Design</p>
+
+
+
+<p>Lecure 07 of MIT Class 6.004: <a href="http://6004.csail.mit.edu/currentsemester/">http://6004.csail.mit.edu/currentsemester/</a></p>
+
+
+
+<p>Ran Ginosar, Metastability and Synchronizers: A Tutorial: <a href="http://webee.technion.ac.il/~ran/papers/MetastabilitySynchronizersTutorialIEEEDT2011.pdf">http://webee.technion.ac.il/~ran/papers/MetastabilitySynchronizersTutorialIEEEDT2011.pdf</a></p>
+
+
+
+<p><s>December 2014 Post on ProgrammableLogicInPractice.com</s> [No Longer Available]</p>
+
+
+
+<p><strong><span style="text-decoration: underline;">REFERENCE FILES</span></strong></p>
+
+
+
+<div class="wp-block-file"><a href="https://colinoflynn.com/wp-content/uploads/2020/12/dec2014_metastability.zip">dec2014_metastability.zip</a><a href="https://colinoflynn.com/wp-content/uploads/2020/12/dec2014_metastability.zip" class="wp-block-file__button" download="">Download</a></div>
+
+
+
+<div class="wp-block-file"><a href="https://colinoflynn.com/wp-content/uploads/2020/12/dec2014_lx9buscrossing.zip">dec2014_lx9buscrossing.zip</a><a href="https://colinoflynn.com/wp-content/uploads/2020/12/dec2014_lx9buscrossing.zip" class="wp-block-file__button" download="">Download</a></div>
+</div>
+
+	
+	<div class="wp-block-group has-global-padding is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--50)">
+		<div class="taxonomy-post_tag is-style-pill wp-block-post-terms"><a href="https://colinoflynn.com/tag/circuit-cellar/" rel="tag">Circuit Cellar</a><span class="wp-block-post-terms__separator">  </span><a href="https://colinoflynn.com/tag/fpga/" rel="tag">fpga</a></div>
+
+		
+		<div class="wp-block-group has-global-padding is-layout-constrained wp-block-group-is-layout-constrained">
+			
+			<div style="height:var(--wp--preset--spacing--40)" aria-hidden="true" class="wp-block-spacer">
+			</div>
+			
+
+			
+			<hr class="wp-block-separator has-text-color has-contrast-3-color has-alpha-channel-opacity has-contrast-3-background-color has-background is-style-wide" style="margin-bottom:var(--wp--preset--spacing--40)">
+			
+
+			
+
+<div class="wp-block-comments wp-block-comments-query-loop">
+	
+	<h2 class="wp-block-heading">Comments</h2>
+	
+	
+	
+
+	
+
+		<div id="respond" style="padding-top:var(--wp--preset--spacing--20);padding-bottom:var(--wp--preset--spacing--20);" class="comment-respond wp-block-post-comments-form">
+		<h3 id="reply-title" class="comment-reply-title">Leave a Reply <small><a rel="nofollow" id="cancel-comment-reply-link" href="https://colinoflynn.com/2020/12/experimenting-with-metastability-and-multiple-clocks-on-fpgas/#respond" style="display:none;">Cancel reply</a></small></h3><form action="https://colinoflynn.com/wp-comments-post.php" method="post" id="commentform" class="comment-form" novalidate=""><p class="comment-notes"><span id="email-notes">Your email address will not be published.</span> <span class="required-field-message">Required fields are marked <span class="required">*</span></span></p><p class="comment-form-comment"><label for="comment">Comment <span class="required">*</span></label> <textarea id="comment" name="comment" cols="45" rows="8" maxlength="65525" required=""></textarea></p><p class="comment-form-author"><label for="author">Name <span class="required">*</span></label> <input id="author" name="author" type="text" value="" size="30" maxlength="245" autocomplete="name" required=""></p>
+<p class="comment-form-email"><label for="email">Email <span class="required">*</span></label> <input id="email" name="email" type="email" value="" size="30" maxlength="100" aria-describedby="email-notes" autocomplete="email" required=""></p>
+<p class="comment-form-url"><label for="url">Website</label> <input id="url" name="url" type="url" value="" size="30" maxlength="200" autocomplete="url"></p>
+<p class="comment-form-cookies-consent"><input id="wp-comment-cookies-consent" name="wp-comment-cookies-consent" type="checkbox" value="yes"> <label for="wp-comment-cookies-consent">Save my name, email, and website in this browser for the next time I comment.</label></p>
+<p class="form-submit wp-block-button"><input name="submit" type="submit" id="submit" class="wp-block-button__link wp-element-button" value="Post Comment"> <input type="hidden" name="comment_post_ID" value="937" id="comment_post_ID">
+<input type="hidden" name="comment_parent" id="comment_parent" value="0">
+</p><p style="display: none;"><input type="hidden" id="akismet_comment_nonce" name="akismet_comment_nonce" value="da2d8f2bb5"></p><p style="display: none !important;" class="akismet-fields-container" data-prefix="ak_"><label>Δ<textarea name="ak_hp_textarea" cols="45" rows="8" maxlength="100"></textarea></label><input type="hidden" id="ak_js_1" name="ak_js" value="1747806959449"><script>document.getElementById( "ak_js_1" ).setAttribute( "value", ( new Date() ).getTime() );</script></p></form>	</div><!-- #respond -->
+	
+</div>
+
+
+
+			
+
+<nav class="wp-block-group is-content-justification-space-between is-nowrap is-layout-flex wp-container-core-group-is-layout-c08a3ef2 wp-block-group-is-layout-flex" style="padding-top:var(--wp--preset--spacing--40);padding-bottom:var(--wp--preset--spacing--40)" aria-label="Posts">
+	<div class="post-navigation-link-previous wp-block-post-navigation-link"><span class="wp-block-post-navigation-link__arrow-previous is-arrow-arrow" aria-hidden="true">←</span><a href="https://colinoflynn.com/2020/11/bam-bam-on-reliability-of-emfi-for-in-situ-automotive-ecu-attacks/" rel="prev"><span class="post-navigation-link__label">Previous: </span> <span class="post-navigation-link__title">BAM BAM!! On Reliability of EMFI for in-situ Automotive ECU Attacks</span></a></div>
+	<div class="post-navigation-link-next wp-block-post-navigation-link"><a href="https://colinoflynn.com/2021/04/analog-discover-pro-teardown/" rel="next"><span class="post-navigation-link__label">Next: </span> <span class="post-navigation-link__title">Analog Discover Pro Teardown</span></a><span class="wp-block-post-navigation-link__arrow-next is-arrow-arrow" aria-hidden="true">→</span></div>
+</nav>
+
+
+
+		</div>
+		
+	</div>
+	
+</main>
+
+
+<footer class="wp-block-template-part">
+<div class="wp-block-group has-global-padding is-layout-constrained wp-block-group-is-layout-constrained" style="padding-top:var(--wp--preset--spacing--50);padding-bottom:var(--wp--preset--spacing--50)">
+<div class="wp-block-columns alignwide is-layout-flex wp-container-core-columns-is-layout-28f84493 wp-block-columns-is-layout-flex">
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:30%">
+<div class="wp-block-group is-vertical is-layout-flex wp-container-core-group-is-layout-fe9cc265 wp-block-group-is-layout-flex">
+
+<p class="wp-block-site-title has-medium-font-size"><a href="https://colinoflynn.com/" target="_self" rel="home">Colin O'Flynn</a></p>
+
+<p class="wp-block-site-tagline has-small-font-size">Embedded Security, Electronics &amp; More!</p></div>
+</div>
+
+
+
+<div class="wp-block-column is-layout-flow wp-block-column-is-layout-flow" style="flex-basis:50%">
+<div class="wp-block-group is-content-justification-space-between is-layout-flex wp-container-core-group-is-layout-e5edad21 wp-block-group-is-layout-flex">
+<div class="wp-block-group is-vertical is-content-justification-stretch is-layout-flex wp-container-core-group-is-layout-353c4f5a wp-block-group-is-layout-flex">
+<h2 class="wp-block-heading has-medium-font-size has-body-font-family" style="font-style:normal;font-weight:600">About</h2>
+
+
+
+<div class="wp-block-group is-vertical is-layout-flex wp-container-core-group-is-layout-ea0cb840 wp-block-group-is-layout-flex"><nav style="font-style:normal;font-weight:400;" class="has-small-font-size  is-vertical wp-block-navigation is-layout-flex wp-container-core-navigation-is-layout-ea0cb840 wp-block-navigation-is-layout-flex"><ul style="font-style:normal;font-weight:400;" class="wp-block-navigation__container has-small-font-size  is-vertical wp-block-navigation has-small-font-size"><li class="has-small-font-size wp-block-navigation-item wp-block-navigation-link"><a class="wp-block-navigation-item__content" href="https://colinoflynn.com/2020/12/experimenting-with-metastability-and-multiple-clocks-on-fpgas/#"><span class="wp-block-navigation-item__label">Team</span></a></li><li class="has-small-font-size wp-block-navigation-item wp-block-navigation-link"><a class="wp-block-navigation-item__content" href="https://colinoflynn.com/2020/12/experimenting-with-metastability-and-multiple-clocks-on-fpgas/#"><span class="wp-block-navigation-item__label">History</span></a></li><li class="has-small-font-size wp-block-navigation-item wp-block-navigation-link"><a class="wp-block-navigation-item__content" href="https://colinoflynn.com/2020/12/experimenting-with-metastability-and-multiple-clocks-on-fpgas/#"><span class="wp-block-navigation-item__label">Careers</span></a></li></ul></nav></div>
+</div>
+
+
+
+<div class="wp-block-group is-vertical is-content-justification-stretch is-layout-flex wp-container-core-group-is-layout-353c4f5a wp-block-group-is-layout-flex">
+<h2 class="wp-block-heading has-medium-font-size has-body-font-family" style="font-style:normal;font-weight:600">Privacy</h2>
+
+
+
+<div class="wp-block-group is-vertical is-layout-flex wp-container-core-group-is-layout-ea0cb840 wp-block-group-is-layout-flex"><nav style="font-style:normal;font-weight:400;" class="has-small-font-size  is-vertical wp-block-navigation is-layout-flex wp-container-core-navigation-is-layout-ea0cb840 wp-block-navigation-is-layout-flex"><ul style="font-style:normal;font-weight:400;" class="wp-block-navigation__container has-small-font-size  is-vertical wp-block-navigation has-small-font-size"><li class="has-small-font-size wp-block-navigation-item wp-block-navigation-link"><a class="wp-block-navigation-item__content" href="https://colinoflynn.com/2020/12/experimenting-with-metastability-and-multiple-clocks-on-fpgas/#"><span class="wp-block-navigation-item__label">Privacy Policy</span></a></li><li class="has-small-font-size wp-block-navigation-item wp-block-navigation-link"><a class="wp-block-navigation-item__content" href="https://colinoflynn.com/2020/12/experimenting-with-metastability-and-multiple-clocks-on-fpgas/#"><span class="wp-block-navigation-item__label">Terms and Conditions</span></a></li><li class="has-small-font-size wp-block-navigation-item wp-block-navigation-link"><a class="wp-block-navigation-item__content" href="https://colinoflynn.com/2020/12/experimenting-with-metastability-and-multiple-clocks-on-fpgas/#"><span class="wp-block-navigation-item__label">Contact Us</span></a></li></ul></nav></div>
+</div>
+
+
+
+<div class="wp-block-group is-vertical is-layout-flex wp-container-core-group-is-layout-fe9cc265 wp-block-group-is-layout-flex">
+<h2 class="wp-block-heading has-body-font-family has-medium-font-size" style="font-style:normal;font-weight:600">All Blog Categories &amp; Posts</h2>
+
+
+<div id="iksm-1035" class="iksm iksm-1035 iksm-container " data-id="1035" data-is-pro="0" data-source="taxonomy">
+<div class="iksm-terms">
+<div class="iksm-terms-tree iksm-terms-tree--level-1 iksm-terms-tree--parents" style="">
+<div class="iksm-terms-tree__inner">
+<div class="iksm-term iksm-term--id-64 iksm-term--parent iksm-term--has-children" data-id="64">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/category/circuit-cellar/" target="_self" tabindex="-1"><br>
+				        <span class="iksm-term__text">Circuit Cellar Articles</span><br>
+		            </a><p></p>
+<div class="iksm-term__toggle" tabindex="0">
+                <span class="iksm-term__toggle__inner"><i class="iks-icon-chevron-5"></i></span>
+            </div>
+<p></p></div>
+<div class="iksm-terms-tree iksm-terms-tree--level-2 iksm-terms-tree--children" style="">
+<div class="iksm-terms-tree__inner">
+<div class="iksm-term iksm-term--id-post-937 iksm-term--child iksm-term--current iksm-term--is-post" data-id="post-937">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2020/12/experimenting-with-metastability-and-multiple-clocks-on-fpgas/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2020/12/experimenting-with-metastability-and-multiple-clocks-on-fpgas/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Experimenting with Metastability and Multiple Clocks on FPGAs</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-885 iksm-term--child iksm-term--is-post" data-id="post-885">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2020/08/fpga-board-design-tips/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2020/08/fpga-board-design-tips/" target="_self" tabindex="-1">			        <span class="iksm-term__text">FPGA Board Design Tips</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-427 iksm-term--child iksm-term--is-post" data-id="post-427">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2013/09/programmable-logic-in-practice/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2013/09/programmable-logic-in-practice/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Programmable Logic in Practice</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-433 iksm-term--child iksm-term--is-post" data-id="post-433">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2013/04/circuit-cellar-25th-anniversary-edition/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2013/04/circuit-cellar-25th-anniversary-edition/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Circuit Cellar 25th Anniversary Edition</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-439 iksm-term--child iksm-term--is-post" data-id="post-439">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2013/01/design-a-fir-filter-in-an-fpga-in-30-mins-using-high-level-synthesis/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2013/01/design-a-fir-filter-in-an-fpga-in-30-mins-using-high-level-synthesis/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Design a FIR Filter in an FPGA in 30 mins using High Level Synthesis</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<p></p></div>
+</div></div>
+<div class="iksm-term iksm-term--id-68 iksm-term--parent iksm-term--has-children" data-id="68">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/category/electronics/" target="_self" tabindex="-1"><br>
+				        <span class="iksm-term__text">Electronics &amp; Production</span><br>
+		            </a><p></p>
+<div class="iksm-term__toggle" tabindex="0">
+                <span class="iksm-term__toggle__inner"><i class="iks-icon-chevron-5"></i></span>
+            </div>
+<p></p></div>
+<div class="iksm-terms-tree iksm-terms-tree--level-2 iksm-terms-tree--children" style="">
+<div class="iksm-terms-tree__inner">
+<div class="iksm-term iksm-term--id-post-1230 iksm-term--child iksm-term--is-post" data-id="post-1230">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2025/05/announcing-my-small-scale-electronics-production-book/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2025/05/announcing-my-small-scale-electronics-production-book/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Announcing my "Small Scale Electronics Production" Book</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-1201 iksm-term--child iksm-term--is-post" data-id="post-1201">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2025/01/my-2003-low-cost-smd-soldering-guide/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2025/01/my-2003-low-cost-smd-soldering-guide/" target="_self" tabindex="-1">			        <span class="iksm-term__text">My 2003 Low Cost SMD Soldering Guide</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-1078 iksm-term--child iksm-term--is-post" data-id="post-1078">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2023/03/intel-lga1700-12th-13th-gen-i9-3900k-top-resistors-capacitors/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2023/03/intel-lga1700-12th-13th-gen-i9-3900k-top-resistors-capacitors/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Intel LGA1700 (12th/13th gen, i9 3900k) Top Resistors/Capacitors</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-962 iksm-term--child iksm-term--is-post" data-id="post-962">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2021/04/analog-discover-pro-teardown/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2021/04/analog-discover-pro-teardown/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Analog Discover Pro Teardown</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-779 iksm-term--child iksm-term--is-post" data-id="post-779">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2017/11/meatbag-pnp-simple-pick-n-place/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2017/11/meatbag-pnp-simple-pick-n-place/" target="_self" tabindex="-1">			        <span class="iksm-term__text">MeatBag PnP – Simple Pick-n-Place</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-701 iksm-term--child iksm-term--is-post" data-id="post-701">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2016/06/a-low-cost-x-y-scanner-using-3d-printer/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2016/06/a-low-cost-x-y-scanner-using-3d-printer/" target="_self" tabindex="-1">			        <span class="iksm-term__text">A Low-Cost X-Y Scanner using 3D Printer</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-690 iksm-term--child iksm-term--is-post" data-id="post-690">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2015/10/low-cost-smd-soldering-setup/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2015/10/low-cost-smd-soldering-setup/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Low-Cost SMD Soldering Setup</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-669 iksm-term--child iksm-term--is-post" data-id="post-669">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2015/06/esc-sv-2015-usssssb-talking-usb-from-python/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2015/06/esc-sv-2015-usssssb-talking-usb-from-python/" target="_self" tabindex="-1">			        <span class="iksm-term__text">ESC SV 2015 – USSSSSB: Talking USB From Python</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-646 iksm-term--child iksm-term--is-post" data-id="post-646">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2015/05/experiments-with-seek-thermal-camera/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2015/05/experiments-with-seek-thermal-camera/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Experiments with Seek Thermal Camera</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-621 iksm-term--child iksm-term--is-post" data-id="post-621">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2015/03/usb-inrush-testing/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2015/03/usb-inrush-testing/" target="_self" tabindex="-1">			        <span class="iksm-term__text">USB Inrush Testing</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-587 iksm-term--child iksm-term--is-post" data-id="post-587">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2015/01/driver-signing-notes/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2015/01/driver-signing-notes/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Driver Signing Notes</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-413 iksm-term--child iksm-term--is-post" data-id="post-413">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2014/11/smd-solder-paste-stencil-creation-with-silhouette-cameo/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2014/11/smd-solder-paste-stencil-creation-with-silhouette-cameo/" target="_self" tabindex="-1">			        <span class="iksm-term__text">SMD Solder Paste Stencil Creation with Silhouette Cameo</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-415 iksm-term--child iksm-term--is-post" data-id="post-415">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2014/10/hackaday-project-latest-circuit-cellar-columns/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2014/10/hackaday-project-latest-circuit-cellar-columns/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Hackaday Project and Latest Circuit Cellar Columns</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-418 iksm-term--child iksm-term--is-post" data-id="post-418">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2014/04/eelive-esc-conference-slides-programs/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2014/04/eelive-esc-conference-slides-programs/" target="_self" tabindex="-1">			        <span class="iksm-term__text">EELive! (ESC) Conference Slides + Programs</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-420 iksm-term--child iksm-term--is-post" data-id="post-420">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2014/02/selecting-an-oscilloscope/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2014/02/selecting-an-oscilloscope/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Selecting an Oscilloscope</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-424 iksm-term--child iksm-term--is-post" data-id="post-424">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2014/01/making-a-usb-hid-keyboard-encoder-board-for-picoscope/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2014/01/making-a-usb-hid-keyboard-encoder-board-for-picoscope/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Making a USB-HID Keyboard Encoder Board for PicoScope</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-425 iksm-term--child iksm-term--is-post" data-id="post-425">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2014/01/making-a-simple-scope-probe-holder/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2014/01/making-a-simple-scope-probe-holder/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Making a Simple Scope Probe Holder</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-434 iksm-term--child iksm-term--is-post" data-id="post-434">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2013/04/split-ground-plane-example-of-failing-high-speed-signals/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2013/04/split-ground-plane-example-of-failing-high-speed-signals/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Split Ground Plane: Example of failing high-speed signals</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-437 iksm-term--child iksm-term--is-post" data-id="post-437">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2013/03/bed-of-nails-test-bed/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2013/03/bed-of-nails-test-bed/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Bed of Nails Test Bed</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-438 iksm-term--child iksm-term--is-post" data-id="post-438">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2013/03/jcop/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2013/03/jcop/" target="_self" tabindex="-1">			        <span class="iksm-term__text">JCOP</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-442 iksm-term--child iksm-term--is-post" data-id="post-442">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2012/11/qtabwidget-in-pyside-automatically-resize/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2012/11/qtabwidget-in-pyside-automatically-resize/" target="_self" tabindex="-1">			        <span class="iksm-term__text">QTabWidget in PySide Automatically Resize</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-446 iksm-term--child iksm-term--is-post" data-id="post-446">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2012/09/atmega-card-funcard-smartcard-programming-fuse-setup-2/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2012/09/atmega-card-funcard-smartcard-programming-fuse-setup-2/" target="_self" tabindex="-1">			        <span class="iksm-term__text">AtMega Card (Funcard) SmartCard Programming &amp; Fuse Setup</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-448 iksm-term--child iksm-term--is-post" data-id="post-448">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2012/08/getting-started-with-git-revision-control-2/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2012/08/getting-started-with-git-revision-control-2/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Getting started with GIT Revision Control</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-451 iksm-term--child iksm-term--is-post" data-id="post-451">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2012/06/high-speed-adc-with-variable-gain-amp-input-2/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2012/06/high-speed-adc-with-variable-gain-amp-input-2/" target="_self" tabindex="-1">			        <span class="iksm-term__text">High-Speed ADC with Variable Gain Amp Input</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-454 iksm-term--child iksm-term--is-post" data-id="post-454">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2012/02/avnet-spartan-6-lx9-board-or-how-chipscope-is-your-saviour/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2012/02/avnet-spartan-6-lx9-board-or-how-chipscope-is-your-saviour/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Avnet Spartan-6 LX9 Board: Or How ChipScope is your Saviour</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-457 iksm-term--child iksm-term--is-post" data-id="post-457">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2011/11/turbo-coding-tutorial/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2011/11/turbo-coding-tutorial/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Turbo Coding Tutorial</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-458 iksm-term--child iksm-term--is-post" data-id="post-458">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2011/10/lpcxpresso-lpc1114-j4-jtag-pinout/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2011/10/lpcxpresso-lpc1114-j4-jtag-pinout/" target="_self" tabindex="-1">			        <span class="iksm-term__text">LPCXpresso LPC1114 J4 JTAG Pinout</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-459 iksm-term--child iksm-term--is-post" data-id="post-459">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2011/10/interfacing-to-34401a/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2011/10/interfacing-to-34401a/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Interfacing to 34401A</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-461 iksm-term--child iksm-term--is-post" data-id="post-461">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2011/10/compass-circles/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2011/10/compass-circles/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Compass Circles</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-462 iksm-term--child iksm-term--is-post" data-id="post-462">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2011/08/making-at90usbkey-run-on-5v-easy-way/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2011/08/making-at90usbkey-run-on-5v-easy-way/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Making AT90USBKEY Run on 5V (Easy Way)</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-464 iksm-term--child iksm-term--is-post" data-id="post-464">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2011/03/fip-is-ipv6-ready/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2011/03/fip-is-ipv6-ready/" target="_self" tabindex="-1">			        <span class="iksm-term__text">FIP is IPv6 Ready</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-466 iksm-term--child iksm-term--is-post" data-id="post-466">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2010/11/fip-the-flexible-ipv6-stack/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2010/11/fip-the-flexible-ipv6-stack/" target="_self" tabindex="-1">			        <span class="iksm-term__text">FIP – The Flexible IP(v6) Stack</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-467 iksm-term--child iksm-term--is-post" data-id="post-467">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2010/08/addition-of-imu-mlx90609-code/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2010/08/addition-of-imu-mlx90609-code/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Addition of IMU / MLX90609 Code</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-468 iksm-term--child iksm-term--is-post" data-id="post-468">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2010/08/moving-electronics-projects-from-old-site/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2010/08/moving-electronics-projects-from-old-site/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Moving electronics projects from old site</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-469 iksm-term--child iksm-term--is-post" data-id="post-469">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2010/08/updated-15dot4-tools/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2010/08/updated-15dot4-tools/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Updated 15dot4-tools</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<p></p></div>
+</div></div>
+<div class="iksm-term iksm-term--id-43 iksm-term--parent iksm-term--has-children" data-id="43">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/category/hardwarehacking/" target="_self" tabindex="-1"><br>
+				        <span class="iksm-term__text">Hardware Hacking</span><br>
+		            </a><p></p>
+<div class="iksm-term__toggle" tabindex="0">
+                <span class="iksm-term__toggle__inner"><i class="iks-icon-chevron-5"></i></span>
+            </div>
+<p></p></div>
+<div class="iksm-terms-tree iksm-terms-tree--level-2 iksm-terms-tree--children" style="">
+<div class="iksm-terms-tree__inner">
+<div class="iksm-term iksm-term--id-post-1112 iksm-term--child iksm-term--is-post" data-id="post-1112">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2024/04/dumping-parallel-nand-with-glasgow/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2024/04/dumping-parallel-nand-with-glasgow/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Dumping Parallel NAND with Glasgow</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-1085 iksm-term--child iksm-term--is-post" data-id="post-1085">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2023/06/recon-2023-adventures-of-my-oven-pinocchio-with-chipwhisperer/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2023/06/recon-2023-adventures-of-my-oven-pinocchio-with-chipwhisperer/" target="_self" tabindex="-1">			        <span class="iksm-term__text">RECON 2023: Adventures of My Oven (Pinocchio) with ChipWhisperer</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-1016 iksm-term--child iksm-term--is-post" data-id="post-1016">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2022/04/new-england-hardware-security-day-2022-talk/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2022/04/new-england-hardware-security-day-2022-talk/" target="_self" tabindex="-1">			        <span class="iksm-term__text">New England Hardware Security Day 2022 Talk</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-986 iksm-term--child iksm-term--is-post" data-id="post-986">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2021/05/apple-airtag-teardown-test-point-mapping/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2021/05/apple-airtag-teardown-test-point-mapping/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Apple AirTag Teardown &amp; Test Point Mapping</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-913 iksm-term--child iksm-term--is-post" data-id="post-913">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2020/11/bam-bam-on-reliability-of-emfi-for-in-situ-automotive-ecu-attacks/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2020/11/bam-bam-on-reliability-of-emfi-for-in-situ-automotive-ecu-attacks/" target="_self" tabindex="-1">			        <span class="iksm-term__text">BAM BAM!! On Reliability of EMFI for in-situ Automotive ECU Attacks</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-870 iksm-term--child iksm-term--is-post" data-id="post-870">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2020/04/square-terminal-teardown/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2020/04/square-terminal-teardown/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Square Terminal Teardown</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-865 iksm-term--child iksm-term--is-post" data-id="post-865">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2020/01/amazon-echo-dot-gen-3-microphone-disable-circuitry/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2020/01/amazon-echo-dot-gen-3-microphone-disable-circuitry/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Amazon Echo Dot Gen 3 – Microphone Disable Circuitry</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-853 iksm-term--child iksm-term--is-post" data-id="post-853">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2019/09/a-call-for-time-travel-resistant-cryptography-ttrc/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2019/09/a-call-for-time-travel-resistant-cryptography-ttrc/" target="_self" tabindex="-1">			        <span class="iksm-term__text">A Call for Time Travel Resistant Cryptography (TTRC)</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-848 iksm-term--child iksm-term--is-post" data-id="post-848">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2019/09/usb-triggering-hacking/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2019/09/usb-triggering-hacking/" target="_self" tabindex="-1">			        <span class="iksm-term__text">USB Triggering &amp; Hacking</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-841 iksm-term--child iksm-term--is-post" data-id="post-841">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2019/05/fichsa-chipwhisperer-tutorial-requirements/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2019/05/fichsa-chipwhisperer-tutorial-requirements/" target="_self" tabindex="-1">			        <span class="iksm-term__text">FICHSA ChipWhisperer Tutorial Requirements</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-824 iksm-term--child iksm-term--is-post" data-id="post-824">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2019/03/glitching-trezor-using-emfi-through-the-enclosure/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2019/03/glitching-trezor-using-emfi-through-the-enclosure/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Glitching Trezor using EMFI Through The Enclosure</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-801 iksm-term--child iksm-term--is-post" data-id="post-801">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2019/02/embedded-world-2019-conference-talk/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2019/02/embedded-world-2019-conference-talk/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Embedded World 2019 Conference Talk</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-796 iksm-term--child iksm-term--is-post" data-id="post-796">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2018/06/more-research-more-fun-im-now-an-assistant-professor/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2018/06/more-research-more-fun-im-now-an-assistant-professor/" target="_self" tabindex="-1">			        <span class="iksm-term__text">More Research, More Fun – I'm now an Assistant Professor</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-773 iksm-term--child iksm-term--is-post" data-id="post-773">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2017/07/breaking-electronic-door-locks-like-youre-on-csi-cyber-black-hat-2017-talk/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2017/07/breaking-electronic-door-locks-like-youre-on-csi-cyber-black-hat-2017-talk/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Breaking Electronic Door Locks Like You're on CSI: Cyber – Black Hat 2017 Talk</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-771 iksm-term--child iksm-term--is-post" data-id="post-771">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2017/07/phd-thesis-finally-done/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2017/07/phd-thesis-finally-done/" target="_self" tabindex="-1">			        <span class="iksm-term__text">PhD Thesis Finally Done</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-743 iksm-term--child iksm-term--is-post" data-id="post-743">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2016/11/philips-hue-aes-ccm-and-more/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2016/11/philips-hue-aes-ccm-and-more/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Philips Hue, AES-CCM, and more!</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-725 iksm-term--child iksm-term--is-post" data-id="post-725">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2016/08/philips-hue-r-e-whitepaper-from-black-hat-2016/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2016/08/philips-hue-r-e-whitepaper-from-black-hat-2016/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Philips Hue – R.E. Whitepaper from Black Hat 2016</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-722 iksm-term--child iksm-term--is-post" data-id="post-722">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2016/08/black-hat-slides-pin-protected-hd-enclosure-mb86c311a-research/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2016/08/black-hat-slides-pin-protected-hd-enclosure-mb86c311a-research/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Black Hat Slides – PIN-Protected HD Enclosure / MB86C311A Research</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-706 iksm-term--child iksm-term--is-post" data-id="post-706">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2016/07/getting-root-on-philips-hue-bridge-2-0/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2016/07/getting-root-on-philips-hue-bridge-2-0/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Getting Root on Philips Hue Bridge 2.0</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-686 iksm-term--child iksm-term--is-post" data-id="post-686">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2015/09/sect-2015-talk-slides/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2015/09/sect-2015-talk-slides/" target="_self" tabindex="-1">			        <span class="iksm-term__text">SECT-2015 Talk Slides</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-683 iksm-term--child iksm-term--is-post" data-id="post-683">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2015/08/defcon-talk-slides/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2015/08/defcon-talk-slides/" target="_self" tabindex="-1">			        <span class="iksm-term__text">DEFCON Talk Slides</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-660 iksm-term--child iksm-term--is-post" data-id="post-660">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2015/05/side-channel-power-analysis-of-aes-core-in-project-vault/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2015/05/side-channel-power-analysis-of-aes-core-in-project-vault/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Side-Channel Power Analysis of AES Core in Project Vault</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-419 iksm-term--child iksm-term--is-post" data-id="post-419">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2014/03/atlseccon-presentation-slides/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2014/03/atlseccon-presentation-slides/" target="_self" tabindex="-1">			        <span class="iksm-term__text">AtlSecCon Presentation Slides</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-465 iksm-term--child iksm-term--is-post" data-id="post-465">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2011/02/breaking-ieee-802-15-4-networks-paperpresentation/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2011/02/breaking-ieee-802-15-4-networks-paperpresentation/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Breaking IEEE 802.15.4 Networks: Paper/Presentation</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<p></p></div>
+</div></div>
+<div class="iksm-term iksm-term--id-3 iksm-term--parent iksm-term--has-children" data-id="3">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/category/reviews/" target="_self" tabindex="-1"><br>
+				        <span class="iksm-term__text">Product Reviews</span><br>
+		            </a><p></p>
+<div class="iksm-term__toggle" tabindex="0">
+                <span class="iksm-term__toggle__inner"><i class="iks-icon-chevron-5"></i></span>
+            </div>
+<p></p></div>
+<div class="iksm-terms-tree iksm-terms-tree--level-2 iksm-terms-tree--children" style="">
+<div class="iksm-terms-tree__inner">
+<div class="iksm-term iksm-term--id-post-414 iksm-term--child iksm-term--is-post" data-id="post-414">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2014/10/rigol-dp832-review/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2014/10/rigol-dp832-review/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Rigol DP832 Review</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-417 iksm-term--child iksm-term--is-post" data-id="post-417">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2014/04/picoscope-2204a-review-2/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2014/04/picoscope-2204a-review-2/" target="_self" tabindex="-1">			        <span class="iksm-term__text">PicoScope 2204A Review</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-423 iksm-term--child iksm-term--is-post" data-id="post-423">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2014/01/picoscope-5000-5444-review/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2014/01/picoscope-5000-5444-review/" target="_self" tabindex="-1">			        <span class="iksm-term__text">PicoScope 5000 (5444) Review</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-426 iksm-term--child iksm-term--is-post" data-id="post-426">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2013/12/picoscope-6000-6403d-review-comparison/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2013/12/picoscope-6000-6403d-review-comparison/" target="_self" tabindex="-1">			        <span class="iksm-term__text">PicoScope 6000 (6403D) Review &amp; Comparison</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-430 iksm-term--child iksm-term--is-post" data-id="post-430">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2013/04/quit-wasting-time-debugging-usb-using-totalphase-triggers/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2013/04/quit-wasting-time-debugging-usb-using-totalphase-triggers/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Quit wasting time debugging USB: Using TotalPhase Triggers</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-453 iksm-term--child iksm-term--is-post" data-id="post-453">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2012/05/metcal-mx-500p-soldering-station-review-repair/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2012/05/metcal-mx-500p-soldering-station-review-repair/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Metcal MX-500P Soldering Station Review &amp; Repair</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-456 iksm-term--child iksm-term--is-post" data-id="post-456">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2012/01/springer-springerlink-mycopy-review/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2012/01/springer-springerlink-mycopy-review/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Springer / SpringerLink MyCopy Review</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<p></p></div>
+</div></div>
+<div class="iksm-term iksm-term--id-69 iksm-term--parent iksm-term--has-children" data-id="69">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/category/steam-engine/" target="_self" tabindex="-1"><br>
+				        <span class="iksm-term__text">Steam Engine</span><br>
+		            </a><p></p>
+<div class="iksm-term__toggle" tabindex="0">
+                <span class="iksm-term__toggle__inner"><i class="iks-icon-chevron-5"></i></span>
+            </div>
+<p></p></div>
+<div class="iksm-terms-tree iksm-terms-tree--level-2 iksm-terms-tree--children" style="">
+<div class="iksm-terms-tree__inner">
+<div class="iksm-term iksm-term--id-post-1068 iksm-term--child iksm-term--is-post" data-id="post-1068">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2023/02/danni-build-feb-11-23/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2023/02/danni-build-feb-11-23/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Danni Build – Feb 11/23</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<p></p></div>
+</div></div>
+<div class="iksm-term iksm-term--id-1 iksm-term--parent iksm-term--has-children" data-id="1">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/category/uncategorized/" target="_self" tabindex="-1"><br>
+				        <span class="iksm-term__text">Uncategorized</span><br>
+		            </a><p></p>
+<div class="iksm-term__toggle" tabindex="0">
+                <span class="iksm-term__toggle__inner"><i class="iks-icon-chevron-5"></i></span>
+            </div>
+<p></p></div>
+<div class="iksm-terms-tree iksm-terms-tree--level-2 iksm-terms-tree--children" style="">
+<div class="iksm-terms-tree__inner">
+<div class="iksm-term iksm-term--id-post-1206 iksm-term--child iksm-term--is-post" data-id="post-1206">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2025/03/modifying-welding-pedal-for-a-miller-6-pin-connector-arccaptain-pedal/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2025/03/modifying-welding-pedal-for-a-miller-6-pin-connector-arccaptain-pedal/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Modifying Welding Pedal for a Miller 6-Pin Connector (ArcCaptain Pedal)</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-1195 iksm-term--child iksm-term--is-post" data-id="post-1195">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2024/12/fixing-ubiquiti-dream-machine-udm-se-hard-drive-not-detected-errors/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2024/12/fixing-ubiquiti-dream-machine-udm-se-hard-drive-not-detected-errors/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Fixing Ubiquiti Dream Machine (UDM) SE Hard Drive Not Detected Errors</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-788 iksm-term--child iksm-term--is-post" data-id="post-788">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2018/04/nova-scotia-embarrassment/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2018/04/nova-scotia-embarrassment/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Nova Scotia Embarrassment –</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-564 iksm-term--child iksm-term--is-post" data-id="post-564">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2014/12/new-site-layout-live/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2014/12/new-site-layout-live/" target="_self" tabindex="-1">			        <span class="iksm-term__text">New Site Layout Live</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-421 iksm-term--child iksm-term--is-post" data-id="post-421">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2014/01/splitting-of-newae-colinoflynn-com/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2014/01/splitting-of-newae-colinoflynn-com/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Splitting of NewAE &amp; ColinOflynn.com</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-460 iksm-term--child iksm-term--is-post" data-id="post-460">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2011/10/meet-me-live-site-updates-and-book-updates/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2011/10/meet-me-live-site-updates-and-book-updates/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Meet me Live, Site Updates, and Book Updates</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-463 iksm-term--child iksm-term--is-post" data-id="post-463">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2011/08/tikiwiki-upgrade/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2011/08/tikiwiki-upgrade/" target="_self" tabindex="-1">			        <span class="iksm-term__text">TikiWiki Upgrade</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-470 iksm-term--child iksm-term--is-post" data-id="post-470">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2010/08/articles-posted/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2010/08/articles-posted/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Articles Posted</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<p></p></div>
+</div></div>
+<div class="iksm-term iksm-term--id-4 iksm-term--parent iksm-term--has-children" data-id="4">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/category/youtube/" target="_self" tabindex="-1"><br>
+				        <span class="iksm-term__text">YouTube Posts</span><br>
+		            </a><p></p>
+<div class="iksm-term__toggle" tabindex="0">
+                <span class="iksm-term__toggle__inner"><i class="iks-icon-chevron-5"></i></span>
+            </div>
+<p></p></div>
+<div class="iksm-terms-tree iksm-terms-tree--level-2 iksm-terms-tree--children" style="">
+<div class="iksm-terms-tree__inner">
+<div class="iksm-term iksm-term--id-post-870 iksm-term--child iksm-term--is-post" data-id="post-870">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2020/04/square-terminal-teardown/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2020/04/square-terminal-teardown/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Square Terminal Teardown</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<div class="iksm-term iksm-term--id-post-865 iksm-term--child iksm-term--is-post" data-id="post-865">
+<div class="iksm-term__inner" tabindex="0">
+                <a class="iksm-term__link" href="https://colinoflynn.com/2020/01/amazon-echo-dot-gen-3-microphone-disable-circuitry/" target="_self" tabindex="-1"><p></p>
+<div class="iksm-term__shifts" style="width:15px; min-width:15px; max-width:15px;"></div>
+</a><p><a class="iksm-term__link" href="https://colinoflynn.com/2020/01/amazon-echo-dot-gen-3-microphone-disable-circuitry/" target="_self" tabindex="-1">			        <span class="iksm-term__text">Amazon Echo Dot Gen 3 – Microphone Disable Circuitry</span><br>
+		            </a>
+			        </p></div>
+<p></p></div>
+<p></p></div>
+</div></div>
+<p></p></div>
+</div>
+</div>
+<div id="iksm_data_args" class="data-args" data-collapse_children_terms="1" data-collapse_other_terms="1" data-collapse_animation_duration="400" data-expand_animation_duration="400"></div>
+</div>
+<p></p>
+</div>
+</div>
+</div>
+</div>
+
+
+
+<div class="wp-block-group alignwide is-layout-flow wp-block-group-is-layout-flow" style="padding-top:var(--wp--preset--spacing--50);padding-bottom:0">
+<p class="has-contrast-2-color has-text-color has-link-color has-small-font-size wp-elements-fb1dc8a358d6c5ee50b4614eb09d35bb">
+		Designed with <a href="https://wordpress.org/" rel="nofollow">WordPress</a>		</p>
+</div>
+</div>
+</footer>
+</div>
+<script type="speculationrules">
+{"prefetch":[{"source":"document","where":{"and":[{"href_matches":"\/*"},{"not":{"href_matches":["\/wp-*.php","\/wp-admin\/*","\/wp-content\/uploads\/*","\/wp-content\/*","\/wp-content\/plugins\/*","\/wp-content\/themes\/twentytwentyfour\/*","\/*\\?(.+)"]}},{"not":{"selector_matches":"a[rel~=\"nofollow\"]"}},{"not":{"selector_matches":".no-prefetch, .no-prefetch a"}}]},"eagerness":"conservative"}]}
+</script>
+<script defer="" src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/akismet-frontend.js.下载" id="akismet-frontend-js"></script>
+<script src="./Experimenting with Metastability and Multiple Clocks on FPGAs – Colin O&#39;Flynn_files/comment-reply.min.js.下载" id="comment-reply-js" async="" data-wp-strategy="async"></script>
+<script id="wp-block-template-skip-link-js-after">
+	( function() {
+		var skipLinkTarget = document.querySelector( 'main' ),
+			sibling,
+			skipLinkTargetID,
+			skipLink;
+
+		// Early exit if a skip-link target can't be located.
+		if ( ! skipLinkTarget ) {
+			return;
+		}
+
+		/*
+		 * Get the site wrapper.
+		 * The skip-link will be injected in the beginning of it.
+		 */
+		sibling = document.querySelector( '.wp-site-blocks' );
+
+		// Early exit if the root element was not found.
+		if ( ! sibling ) {
+			return;
+		}
+
+		// Get the skip-link target's ID, and generate one if it doesn't exist.
+		skipLinkTargetID = skipLinkTarget.id;
+		if ( ! skipLinkTargetID ) {
+			skipLinkTargetID = 'wp--skip-link--target';
+			skipLinkTarget.id = skipLinkTargetID;
+		}
+
+		// Create the skip link.
+		skipLink = document.createElement( 'a' );
+		skipLink.classList.add( 'skip-link', 'screen-reader-text' );
+		skipLink.id = 'wp-skip-link';
+		skipLink.href = '#' + skipLinkTargetID;
+		skipLink.innerText = 'Skip to content';
+
+		// Inject the skip link.
+		sibling.parentElement.insertBefore( skipLink, sibling );
+	}() );
+	
+</script>
+
+
+</body><div class="xl-chrome-ext-bar_4DB361DE-01F7-4376-B494-639E489D19ED" id="xl_chrome_ext_4DB361DE-01F7-4376-B494-639E489D19ED" data-v-app="" style="display: block;"><div class=""><div id="xl_chrome_ext_video_tag_wrapper_4DB361DE-01F7-4376-B494-639E489D19ED" config="[object Object]" uiversion="v2" exception="false" latestvideosrc="" isshowvideotag="false" isshowdownloadbar="true" isshowcloudaddbar="false"><div class="_video_op_wrapper_96mx8_1" config="[object Object]" uiversion="v2" style="display: none;"><ul class="_video_op_list_96mx8_17"><li class="_op_item_96mx8_39 _download_96mx8_45"><span class="_op_icon_96mx8_25"></span><span class="_op_text_96mx8_31">下载</span></li><li class="_op_item_96mx8_39 _screen_96mx8_51"><span class="_op_icon_96mx8_25"></span><span class="_op_text_96mx8_31">投屏</span></li></ul></div></div><div class="badge_wrapper_4DB361DE-01F7-4376-B494-639E489D19ED _badge_wrapper_eor63_1" id="badge_wrapper_4DB361DE-01F7-4376-B494-639E489D19ED"><div class="_logo_eor63_20"></div><span class="_line_eor63_27"></span><div class="_text_wrapper_eor63_33"><span class="_download_icon_eor63_39"></span><span class="_text_eor63_33">高速下载</span></div></div><!----><!----><!----><div class="_container_wq4mj_4"><!----></div><div id="xl-chrome-ext-footer" class="xl-chrome-ext-footer" taburl=""><div class="_animate__bounceOutUp_ti0wz_29 _xl-chrome-ext-footer__ball_ti0wz_33"><div class="xl-chrome-ext-footer__logo"></div><div class="xl-chrome-ext-footer__quantity">5</div></div><div class="xl-chrome-ext-footer__bar"><!----><div class="xl-chrome-ext-footer__content"><p class="xl-chrome-ext-footer__text"> 检测到页面存在 5 个资源 </p><div class="xl-chrome-ext-footer__action"><div class="xl-chrome-ext-footer__url download"><div class="xl-chrome-ext-footer__popover xl-chrome-ext-footer__popover--hidden" style="top: -384px;"><h3>用迅雷享高速下载</h3><div class="xl-chrome-ext-footer__explain">当前页面含资源如下：</div><ul class="xl-chrome-ext-footer__list"><li class="xl-chrome-ext-footer__item"><div class="xl-chrome-ext-footer__type xl-link"></div><div class="_xl-chrome-ext-footer__name_ti0wz_50">an042.pdf</div><button type="download" data="{&quot;fileName&quot;:&quot;an042.pdf&quot;,&quot;protocol&quot;:&quot;ftp:&quot;,&quot;isVideoURL&quot;:false,&quot;url&quot;:&quot;ftp://ftp.altera.com/pub/lit_req/document/an/an042.pdf&quot;,&quot;suffix&quot;:&quot;.pdf&quot;,&quot;subCategory&quot;:&quot;text&quot;,&quot;isInIframe&quot;:false}"> 下载 </button></li><li class="xl-chrome-ext-footer__item"><div class="xl-chrome-ext-footer__type xl-link"></div><div class="_xl-chrome-ext-footer__name_ti0wz_50">xapp094.pdf</div><button type="download" data="{&quot;fileName&quot;:&quot;xapp094.pdf&quot;,&quot;protocol&quot;:&quot;http:&quot;,&quot;isVideoURL&quot;:false,&quot;url&quot;:&quot;http://www.xilinx.com/support/documentation/application_notes/xapp094.pdf&quot;,&quot;suffix&quot;:&quot;.pdf&quot;,&quot;subCategory&quot;:&quot;text&quot;,&quot;isInIframe&quot;:false}"> 下载 </button></li><li class="xl-chrome-ext-footer__item"><div class="xl-chrome-ext-footer__type xl-link"></div><div class="_xl-chrome-ext-footer__name_ti0wz_50">MetastabilitySynchronizersTutorialIEEEDT2011.pdf</div><button type="download" data="{&quot;fileName&quot;:&quot;MetastabilitySynchronizersTutorialIEEEDT2011.pdf&quot;,&quot;protocol&quot;:&quot;http:&quot;,&quot;isVideoURL&quot;:false,&quot;url&quot;:&quot;http://webee.technion.ac.il/~ran/papers/MetastabilitySynchronizersTutorialIEEEDT2011.pdf&quot;,&quot;suffix&quot;:&quot;.pdf&quot;,&quot;subCategory&quot;:&quot;text&quot;,&quot;isInIframe&quot;:false}"> 下载 </button></li><li class="xl-chrome-ext-footer__item"><div class="xl-chrome-ext-footer__type xl-link"></div><div class="_xl-chrome-ext-footer__name_ti0wz_50">dec2014_metastability.zip</div><button type="download" data="{&quot;fileName&quot;:&quot;dec2014_metastability.zip&quot;,&quot;protocol&quot;:&quot;https:&quot;,&quot;isVideoURL&quot;:false,&quot;url&quot;:&quot;https://colinoflynn.com/wp-content/uploads/2020/12/dec2014_metastability.zip&quot;,&quot;suffix&quot;:&quot;.zip&quot;,&quot;subCategory&quot;:&quot;archive&quot;,&quot;isInIframe&quot;:false}"> 下载 </button></li><li class="xl-chrome-ext-footer__item"><div class="xl-chrome-ext-footer__type xl-link"></div><div class="_xl-chrome-ext-footer__name_ti0wz_50">dec2014_lx9buscrossing.zip</div><button type="download" data="{&quot;fileName&quot;:&quot;dec2014_lx9buscrossing.zip&quot;,&quot;protocol&quot;:&quot;https:&quot;,&quot;isVideoURL&quot;:false,&quot;url&quot;:&quot;https://colinoflynn.com/wp-content/uploads/2020/12/dec2014_lx9buscrossing.zip&quot;,&quot;suffix&quot;:&quot;.zip&quot;,&quot;subCategory&quot;:&quot;archive&quot;,&quot;isInIframe&quot;:false}"> 下载 </button></li></ul></div><div class="xl-chrome-ext-footer__action-name">下载</div></div><!----></div><div class="xl-chrome-ext-footer__agreement"><span>启用插件访问在线视频时，插件将在播放窗口展示对播放链接的快捷功能</span><span class="xl-chrome-ext-footer__know">我知道了</span></div><div class="xl-chrome-ext-footer__close-wrapper"><div class="xl-chrome-ext-tips"><div class="xl-chrome-ext-footer__close"></div><div class="xl-chrome-ext-title xl-chrome-ext-title--footer">本次关闭</div></div></div></div></div></div></div></div></html>
